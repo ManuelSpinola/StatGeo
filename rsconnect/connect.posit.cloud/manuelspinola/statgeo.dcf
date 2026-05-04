@@ -1,0 +1,12 @@
+name: statgeo
+title: StatGeo
+username: manuelspinola
+account: manuelspinola
+server: connect.posit.cloud
+hostUrl: https://api.connect.posit.cloud/v1
+appId: 019df3f6-1a24-6250-1160-4b9f4b5f1410
+bundleId:
+url: https://connect.posit.cloud/manuelspinola/content/019df3f6-1a24-6250-1160-4b9f4b5f1410
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
