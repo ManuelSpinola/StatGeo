@@ -1,0 +1,27 @@
+Package: StatGeo
+Title: StatGeo - Visualización y análisis espacial interactivo
+Version: 1.0.0
+Description: Aplicación Shiny modular para visualización y análisis espacial interactivo
+    de datos vectoriales y raster, orientada a usuarios que requieren explorar y analizar
+    información geoespacial sin necesidad de software SIG de escritorio.
+    Parte de StatSuite de herramientas educativas para estadística y ciencia de datos.
+Authors@R: person(
+    given  = "Manuel",
+    family = "Spínola",
+    role   = c("aut", "cre"),
+    email  = "romeo.spinola.parallada@una.cr"
+  )
+Depends: R (>= 4.1.0)
+Imports:
+    shiny,
+    bslib,
+    sf,
+    terra,
+    tidyterra,
+    raster,
+    leaflet,
+    mapview,
+    easystats,
+    tidyverse,
+    DT
+License: MIT

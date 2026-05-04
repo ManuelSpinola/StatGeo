@@ -1,0 +1,28 @@
+# ── R ─────────────────────────────────────────────────────
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+.Renviron
+
+# ── Shiny ─────────────────────────────────────────────────
+rsconnect/
+
+# ── Archivos temporales ───────────────────────────────────
+*.tmp
+*.log
+tmp/
+temp/
+
+# ── Datos subidos por usuarios (no versionar) ─────────────
+data/
+uploads/
+www/uploads/
+
+# ── Sistema operativo ─────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── renv (si se usa) ──────────────────────────────────────
+renv/library/
+renv/staging/

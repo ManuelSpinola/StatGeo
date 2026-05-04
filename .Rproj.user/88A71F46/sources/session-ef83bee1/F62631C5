@@ -1,0 +1,26 @@
+{
+    "id": "F62631C5",
+    "path": "~/R_MS/R_shiny/R_shiny_statgeo/modules/mod_upload.R",
+    "project_path": "modules/mod_upload.R",
+    "type": "r_source",
+    "hash": "2552494299",
+    "contents": "",
+    "dirty": false,
+    "created": 1777912308346.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "550,0",
+        "scrollLine": "528"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1777912425,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1777912425748,
+    "read_only": false,
+    "read_only_alternatives": []
+}
