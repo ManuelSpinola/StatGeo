@@ -4,11 +4,6 @@
 # Mapas: interactivo (leaflet) + estático (ggplot2 + sf)
 # ============================================================
 
-library(sf)
-library(dplyr)
-library(leaflet)
-library(ggplot2)
-library(DT)
 
 # ── UI ──────────────────────────────────────────────────────
 mod_vector_ui <- function(id) {
@@ -162,7 +157,7 @@ mod_vector_server <- function(id, shared) {
     geom_type <- reactive({
       req(shared$sf_data)
       gt <- as.character(sf::st_geometry_type(shared$sf_data,
-                                               by_geometry = FALSE))
+                                              by_geometry = FALSE))
       toupper(gt)
     })
 
@@ -204,12 +199,12 @@ mod_vector_server <- function(id, shared) {
       req(shared$sf_data)
       cols     <- names(shared$sf_data)
       num_cols <- cols[sapply(sf::st_drop_geometry(shared$sf_data),
-                               is.numeric)]
+                              is.numeric)]
 
       updateSelectInput(session, "color_col",
                         choices  = c("(ninguno)" = "", cols),
                         selected = if (length(num_cols) > 0) num_cols[1]
-                                   else "")
+                        else "")
       updateSelectInput(session, "filter_col",
                         choices = c("(ninguno)" = "(ninguno)", cols))
     })
@@ -266,14 +261,14 @@ mod_vector_server <- function(id, shared) {
 
       # Con o sin variable de color
       has_color <- !is.null(color_by) && color_by != "" &&
-                   color_by %in% names(sf_obj)
+        color_by %in% names(sf_obj)
 
       if (has_color) {
         col_data <- sf_obj[[color_by]]
         pal <- if (is.numeric(col_data))
-                 colorNumeric(pal_name,  col_data, na.color = "#aaaaaa")
-               else
-                 colorFactor(pal_name,  col_data, na.color = "#aaaaaa")
+          colorNumeric(pal_name,  col_data, na.color = "#aaaaaa")
+        else
+          colorFactor(pal_name,  col_data, na.color = "#aaaaaa")
 
         m <- add_layer(m, sf_obj, col_data, pal, popup_html,
                        radius, opacity, color_by)
@@ -294,7 +289,7 @@ mod_vector_server <- function(id, shared) {
       gt       <- geom_type()
 
       has_color <- !is.null(color_by) && color_by != "" &&
-                   color_by %in% names(sf_obj)
+        color_by %in% names(sf_obj)
 
       # Base del plot
       p <- ggplot(sf_obj)
@@ -331,28 +326,28 @@ mod_vector_server <- function(id, shared) {
       } else {
         # Sin variable: color fijo segun geometria
         if (grepl("POINT|MULTIPOINT", gt)) {
-          p <- p + geom_sf(color = "#2D6A4F", size = 2, alpha = 0.7)
+          p <- p + geom_sf(color = colores$primario, size = 2, alpha = 0.7)
         } else if (grepl("LINE|LINESTRING", gt)) {
-          p <- p + geom_sf(color = "#2D6A4F", linewidth = 0.8)
+          p <- p + geom_sf(color = colores$primario, linewidth = 0.8)
         } else {
-          p <- p + geom_sf(fill = "#52B788", color = "white",
+          p <- p + geom_sf(fill = colores$secundario, color = "white",
                            linewidth = 0.3, alpha = 0.8)
         }
       }
 
       # Tema
       p <- p + switch(input$gg_theme %||% "minimal",
-        "minimal" = theme_minimal(),
-        "void"    = theme_void(),
-        "classic" = theme_classic(),
-        "dark"    = theme_dark(),
-        theme_minimal()
+                      "minimal" = theme_minimal(),
+                      "void"    = theme_void(),
+                      "classic" = theme_classic(),
+                      "dark"    = theme_dark(),
+                      theme_minimal()
       )
 
       p <- p + labs(
         title    = if (has_color)
-                     paste("Distribucion de:", color_by)
-                   else paste("Datos vectoriales —", gt),
+          paste("Distribucion de:", color_by)
+        else paste("Datos vectoriales —", gt),
         subtitle = paste(format(nrow(sf_obj), big.mark = ","),
                          "features |",
                          sf::st_crs(sf_obj)$input %||% "Sin CRS"),
@@ -377,7 +372,7 @@ mod_vector_server <- function(id, shared) {
         color_by <- input$color_col
         gt       <- geom_type()
         has_color <- !is.null(color_by) && color_by != "" &&
-                     color_by %in% names(sf_obj)
+          color_by %in% names(sf_obj)
 
         p <- ggplot(sf_obj)
         if (has_color) {
@@ -395,11 +390,11 @@ mod_vector_server <- function(id, shared) {
                                           name   = color_by)
         } else {
           if (grepl("POINT|MULTIPOINT", gt))
-            p <- p + geom_sf(color = "#2D6A4F", size = 2)
+            p <- p + geom_sf(color = colores$primario, size = 2)
           else if (grepl("LINE", gt))
-            p <- p + geom_sf(color = "#2D6A4F")
+            p <- p + geom_sf(color = colores$primario)
           else
-            p <- p + geom_sf(fill = "#52B788", color = "white")
+            p <- p + geom_sf(fill = colores$secundario, color = "white")
         }
         p <- p + theme_minimal() +
           labs(title = paste("Mapa —", gt), x = NULL, y = NULL)
@@ -468,8 +463,8 @@ add_layer <- function(m, sf_obj, col_data, pal, popups,
 
   has_pal <- !is.null(pal) && !is.null(col_data)
 
-  color_vec <- if (has_pal) pal(col_data) else "#2D6A4F"
-  fill_vec  <- if (has_pal) pal(col_data) else "#52B788"
+  color_vec <- if (has_pal) pal(col_data) else colores$primario
+  fill_vec  <- if (has_pal) pal(col_data) else colores$secundario
 
   if (grepl("POINT|MULTIPOINT", gt)) {
     m <- m %>% addCircleMarkers(

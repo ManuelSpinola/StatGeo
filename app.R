@@ -13,9 +13,6 @@
 # ── 1. Librerías y helpers ─────────────────────────────────
 source("R/helpers.R")
 
-library(shiny)
-library(bslib)
-
 # ── 2. Módulos ─────────────────────────────────────────────
 source("modules/mod_upload.R")
 source("modules/mod_vector.R")

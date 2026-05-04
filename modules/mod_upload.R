@@ -15,11 +15,6 @@
 #   • ERDAS Imagine (.img)
 # ============================================================
 
-library(sf)
-library(terra)
-library(readr)
-library(readxl)
-library(dplyr)
 
 # ── UI ──────────────────────────────────────────────────────
 mod_upload_ui <- function(id) {
@@ -548,4 +543,3 @@ mod_upload_server <- function(id, shared) {
 
   })
 }
-

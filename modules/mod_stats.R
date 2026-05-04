@@ -4,11 +4,6 @@
 #      tidyverse (dplyr, ggplot2, tidyr)
 # ============================================================
 
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(sf)
-library(DT)
 
 # easystats (se carga con precaución — disponible si instalado)
 safe_library <- function(pkg) {
@@ -16,7 +11,6 @@ safe_library <- function(pkg) {
     tryCatch(library(pkg, character.only = TRUE), error = function(e) NULL)
   )
 }
-safe_library("easystats")
 safe_library("parameters")
 safe_library("report")
 safe_library("see")
@@ -26,34 +20,34 @@ safe_library("datawizard")
 # ── UI ──────────────────────────────────────────────────────
 mod_stats_ui <- function(id) {
   ns <- NS(id)
-  
+
   layout_sidebar(
     sidebar = sidebar(
       width = 300,
       title = "Análisis",
-      
+
       h6(class = "text-muted fw-bold text-uppercase small", "Fuente de datos"),
-      
+
       radioButtons(ns("data_source"), NULL,
                    choices  = c("Vectorial (atributos)" = "vector",
                                 "Raster (por banda)"    = "raster"),
                    selected = "vector"),
-      
+
       conditionalPanel(
         condition = sprintf("input['%s'] == 'raster'", ns("data_source")),
         selectInput(ns("raster_band_stat"), "Banda:", choices = NULL)
       ),
-      
+
       hr(),
-      
+
       h6(class = "text-muted fw-bold text-uppercase small", "Estadísticas descriptivas"),
-      
+
       uiOutput(ns("var_selector")),
-      
+
       hr(),
-      
+
       h6(class = "text-muted fw-bold text-uppercase small", "Visualización"),
-      
+
       selectInput(ns("plot_type"), "Tipo de gráfico:",
                   choices = c(
                     "Histograma"       = "hist",
@@ -62,20 +56,20 @@ mod_stats_ui <- function(id) {
                     "Dispersión (2 vars)" = "scatter",
                     "Correlaciones"    = "corr"
                   )),
-      
+
       conditionalPanel(
         condition = sprintf("input['%s'] == 'scatter'", ns("plot_type")),
         uiOutput(ns("var2_selector"))
       ),
-      
+
       actionButton(ns("run_analysis"), "Ejecutar análisis",
                    class = "btn-success w-100 mt-2")
     ),
-    
+
     # ── Panel principal ──────────────────────────────────────
     layout_columns(
       col_widths = c(6, 6),
-      
+
       # Estadísticas descriptivas
       card(
         card_header(icon("table-list"), " Estadísticas descriptivas"),
@@ -83,7 +77,7 @@ mod_stats_ui <- function(id) {
           uiOutput(ns("stats_output"))
         )
       ),
-      
+
       # Gráfico
       card(
         card_header(icon("chart-area"), " Visualización"),
@@ -91,7 +85,7 @@ mod_stats_ui <- function(id) {
           plotOutput(ns("main_plot"), height = "400px")
         )
       ),
-      
+
       # Reporte en texto (easystats::report)
       card(
         col_widths = 12,
@@ -107,7 +101,7 @@ mod_stats_ui <- function(id) {
 # ── Server ──────────────────────────────────────────────────
 mod_stats_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
-    
+
     # ── Datos según fuente seleccionada ───────────────────────
     active_data <- reactive({
       if (input$data_source == "vector") {
@@ -121,7 +115,7 @@ mod_stats_server <- function(id, shared) {
         data.frame(valor = as.numeric(vals))
       }
     })
-    
+
     # ── Actualizar bandas raster ───────────────────────────────
     observeEvent(shared$raster_data, {
       req(shared$raster_data)
@@ -130,7 +124,7 @@ mod_stats_server <- function(id, shared) {
                         choices  = setNames(seq_len(n), paste("Banda", seq_len(n))),
                         selected = 1)
     })
-    
+
     # ── Selector de variable 1 ────────────────────────────────
     output$var_selector <- renderUI({
       req(active_data())
@@ -138,7 +132,7 @@ mod_stats_server <- function(id, shared) {
       if (length(cols) == 0) return(helpText("Sin variables numéricas disponibles."))
       selectInput(session$ns("var1"), "Variable:", choices = cols, selected = cols[1])
     })
-    
+
     # ── Selector de variable 2 (scatter) ──────────────────────
     output$var2_selector <- renderUI({
       req(active_data())
@@ -147,13 +141,13 @@ mod_stats_server <- function(id, shared) {
       selectInput(session$ns("var2"), "Variable Y:", choices = cols,
                   selected = if (length(cols) >= 2) cols[2] else cols[1])
     })
-    
+
     # ── Estadísticas descriptivas ─────────────────────────────
     stats_df <- eventReactive(input$run_analysis, {
       req(active_data(), input$var1)
       df  <- active_data()
       col <- df[[input$var1]]
-      
+
       data.frame(
         Estadística = c("N", "NAs", "Mínimo", "Q1", "Mediana",
                         "Media", "Q3", "Máximo", "Desv. Est.",
@@ -173,86 +167,86 @@ mod_stats_server <- function(id, shared) {
         ), 4)
       )
     })
-    
+
     output$stats_output <- renderUI({
       req(stats_df())
-      
+
       renderTable(stats_df(), striped = TRUE, bordered = TRUE,
                   small = TRUE, width = "100%")()
     })
-    
+
     # ── Gráfico principal ─────────────────────────────────────
     output$main_plot <- renderPlot({
       input$run_analysis
       req(active_data(), input$var1)
-      
+
       df   <- active_data()
       var1 <- input$var1
       col1 <- df[[var1]]
       type <- input$plot_type
-      
+
       base_theme <- theme_minimal(base_size = 13) +
-        theme(plot.background = element_rect(fill = "#F8FAF9", color = NA),
+        theme(plot.background = element_rect(fill = colores$fondo, color = NA),
               panel.grid.minor = element_blank())
-      
+
       if (type == "hist") {
         ggplot(df, aes(x = .data[[var1]])) +
           geom_histogram(aes(y = after_stat(density)),
-                         bins = 30, fill = "#52B788", alpha = 0.8, color = "white") +
-          geom_density(color = "#2D6A4F", linewidth = 1) +
+                         bins = 30, fill = colores$secundario, alpha = 0.8, color = "white") +
+          geom_density(color = colores$primario, linewidth = 1) +
           base_theme +
           labs(title = paste("Distribución de", var1), x = var1, y = "Densidad")
-        
+
       } else if (type == "box") {
         ggplot(df, aes(y = .data[[var1]])) +
-          geom_boxplot(fill = "#52B788", alpha = 0.7, color = "#2D6A4F",
-                       outlier.color = "#B7472A") +
+          geom_boxplot(fill = colores$secundario, alpha = 0.7, color = colores$primario,
+                       outlier.color = colores$peligro) +
           base_theme +
           labs(title = paste("Boxplot de", var1), y = var1)
-        
+
       } else if (type == "density") {
         ggplot(df, aes(x = .data[[var1]])) +
-          geom_density(fill = "#52B788", alpha = 0.5, color = "#2D6A4F", linewidth = 1.2) +
+          geom_density(fill = colores$secundario, alpha = 0.5, color = colores$primario, linewidth = 1.2) +
           base_theme +
           labs(title = paste("Densidad de", var1), x = var1, y = "Densidad")
-        
+
       } else if (type == "scatter") {
         req(input$var2)
         var2 <- input$var2
-        
+
         ggplot(df, aes(x = .data[[var1]], y = .data[[var2]])) +
-          geom_point(alpha = 0.5, color = "#2D6A4F", size = 1.5) +
-          geom_smooth(method = "lm", color = "#B7472A", fill = "#f4a58a", alpha = 0.2) +
+          geom_point(alpha = 0.5, color = colores$primario, size = 1.5) +
+          geom_smooth(method = "lm", color = colores$peligro, fill = colores$advertencia, alpha = 0.2) +
           base_theme +
           labs(title = paste(var1, "vs", var2), x = var1, y = var2)
-        
+
       } else if (type == "corr") {
         # Matriz de correlación simple
         num_df  <- df %>% dplyr::select(where(is.numeric))
         cor_mat <- cor(num_df, use = "complete.obs")
-        
+
         cor_long <- as.data.frame(as.table(cor_mat)) %>%
           rename(Var1 = Var1, Var2 = Var2, Correlacion = Freq)
-        
+
         ggplot(cor_long, aes(x = Var1, y = Var2, fill = Correlacion)) +
           geom_tile(color = "white") +
           geom_text(aes(label = round(Correlacion, 2)), size = 3) +
-          scale_fill_gradient2(low = "#B7472A", mid = "white", high = "#2D6A4F",
+          scale_fill_gradient2(low = colores$peligro, mid = "white", high = colores$primario,
                                midpoint = 0, limits = c(-1, 1)) +
           base_theme +
           theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
           labs(title = "Matriz de correlaciones", x = NULL, y = NULL)
       }
     })
-    
+
     # ── Reporte automático (easystats) ────────────────────────
     output$auto_report <- renderText({
       input$run_analysis
       req(active_data(), input$var1)
-      
+
       df  <- active_data()
       col <- df[[input$var1]]
-      
+
       tryCatch({
         # Intentar con easystats::report si está disponible
         if (exists("report") && requireNamespace("report", quietly = TRUE)) {
@@ -274,7 +268,7 @@ mod_stats_server <- function(id, shared) {
         paste("Error al generar reporte:", e$message)
       })
     })
-    
+
   })
 }
 

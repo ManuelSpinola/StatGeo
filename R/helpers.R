@@ -2,6 +2,23 @@
 # R/helpers.R — Funciones auxiliares globales
 # ============================================================
 
+library(shiny)
+library(bslib)
+library(sf)
+library(terra)
+library(tidyterra)
+library(raster)
+library(leaflet)
+library(mapview)
+library(tidyverse)
+library(readxl)
+library(scales)
+library(DT)
+library(parameters)
+library(report)
+library(correlation)
+library(datawizard)
+
 # Operador null-coalescing
 `%||%` <- function(a, b) if (!is.null(a) && !is.na(a) && a != "") a else b
 
