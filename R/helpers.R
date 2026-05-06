@@ -4,6 +4,7 @@
 
 library(shiny)
 library(bslib)
+library(bsicons)
 library(sf)
 library(terra)
 library(tidyterra)

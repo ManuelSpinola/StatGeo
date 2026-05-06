@@ -17,16 +17,15 @@ source("R/helpers.R")
 source("modules/mod_upload.R")
 source("modules/mod_vector.R")
 source("modules/mod_raster.R")
+source("modules/mod_integracion.R")
 source("modules/mod_stats.R")
+source("modules/mod_acerca_de.R")
 
 # ── 3. UI ──────────────────────────────────────────────────
 ui <- page_navbar(
   title = div(
     style = "display: flex; align-items: center; gap: 10px; margin-top: 4px;",
-    img(
-      src    = "hexsticker_StatGeo.png",
-      height = "38px"
-    ),
+    img(src = "hexsticker_StatGeo.png", height = "38px"),
     span("StatGeo", style = "font-weight: 600;")
   ),
   theme  = tema_app,
@@ -34,16 +33,18 @@ ui <- page_navbar(
   footer = div(
     class = "text-center text-muted small py-2",
     style = paste0("border-top: 1px solid ", colores$borde, ";"),
-    "Manuel Spínola · ICOMVIS · Universidad Nacional · Costa Rica"
+    "Manuel Sp\u00ednola \u00b7 ICOMVIS \u00b7 Universidad Nacional \u00b7 Costa Rica"
   ),
 
-  nav_panel("📁 Datos",        mod_upload_ui("upload")),
-  nav_panel("🗺️ Vectorial",    mod_vector_ui("vector")),
-  nav_panel("🏔️ Raster",       mod_raster_ui("raster")),
-  nav_panel("📊 Estadísticas", mod_stats_ui("stats")),
+  nav_panel(title = "Datos",        icon = bs_icon("folder2-open"),  mod_upload_ui("upload")),
+  nav_panel(title = "Vectorial",    icon = bs_icon("map"),            mod_vector_ui("vector")),
+  nav_panel(title = "Raster",       icon = bs_icon("grid-3x3"),       mod_raster_ui("raster")),
+  nav_panel(title = "Integración",  icon = bs_icon("layers"),         mod_integracion_ui("integracion")),
+  nav_panel(title = "Estadísticas", icon = bs_icon("bar-chart"),      mod_stats_ui("stats")),
+  nav_panel(title = "Acerca de",    icon = bs_icon("info-circle"),    mod_acerca_de_ui("acerca_de")),
 
   nav_spacer(),
-  nav_item(tags$span(class = "text-muted small", "StatGeo v1.0"))
+  nav_item(tags$span(class = "text-muted small", "StatGeo v1.1"))
 )
 
 # ── 4. Server ──────────────────────────────────────────────
@@ -59,10 +60,12 @@ server <- function(input, output, session) {
   # Módulo de carga — produce datos compartidos
   mod_upload_server("upload", shared = shared)
 
-  # Módulos de visualización — consumen datos compartidos
-  mod_vector_server("vector", shared = shared)
-  mod_raster_server("raster", shared = shared)
-  mod_stats_server("stats",  shared = shared)
+  # Módulos de exploración — consumen shared
+  mod_vector_server("vector",           shared = shared)
+  mod_raster_server("raster",           shared = shared)
+  mod_integracion_server("integracion", shared = shared)
+  mod_stats_server("stats",             shared = shared)
+  mod_acerca_de_server("acerca_de")
 }
 
 # ── 5. Lanzar ──────────────────────────────────────────────
