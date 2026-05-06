@@ -118,7 +118,7 @@ mod_raster_server <- function(id, shared) {
       )
     })
 
-    # ── Mapa leaflet con raster ───────────────────────────────
+    # ── Mapa interactivo con mapview ──────────────────────────
     output$raster_map <- renderLeaflet({
       req(raster_band())
       r <- raster_band()
@@ -128,46 +128,18 @@ mod_raster_server <- function(id, shared) {
         r <- terra::project(r, "EPSG:4326")
       }
 
-      # Reducir resolución si el raster es muy grande (> 1M celdas)
-      if (terra::ncell(r) > 1e6) {
-        factor <- ceiling(sqrt(terra::ncell(r) / 1e6))
-        r <- terra::aggregate(r, fact = factor, fun = "mean", na.rm = TRUE)
-      }
+      # Paleta de colores
+      pal <- get_palette(input$raster_pal)
+      if (input$reverse_pal) pal <- rev(pal)
 
-      vals <- terra::values(r, na.rm = TRUE)
-
-      # Validar que hay valores para mapear
-      validate(need(length(vals) > 0, "El raster no tiene valores válidos para mostrar."))
-
-      pal_fn <- if (input$reverse_pal)
-        colorNumeric(rev(get_palette(input$raster_pal)), vals, na.color = NA)
-      else
-        colorNumeric(get_palette(input$raster_pal), vals, na.color = NA)
-
-      # Convertir a raster de R para leaflet con manejo de error
-      r_raster <- tryCatch(
-        raster::raster(r),
-        error = function(e) {
-          showNotification("No se pudo convertir el raster para el mapa interactivo.", type = "warning")
-          NULL
-        }
-      )
-
-      validate(need(!is.null(r_raster), "No se pudo generar el mapa interactivo. Usá la pestaña 'Gráfico ggplot'."))
-
-      leaflet() %>%
-        addProviderTiles(providers$CartoDB.DarkMatter, group = "Dark") %>%
-        addProviderTiles(providers$CartoDB.Positron,   group = "Light") %>%
-        addProviderTiles(providers$Esri.WorldImagery,  group = "Satélite") %>%
-        addRasterImage(r_raster, colors = pal_fn, opacity = 0.85, group = "Raster") %>%
-        addLegend("bottomright", pal = pal_fn, values = vals,
-                  title = paste("Banda", input$band), opacity = 0.9) %>%
-        addLayersControl(
-          baseGroups    = c("Light", "Dark", "Satélite"),
-          overlayGroups = c("Raster"),
-          options       = layersControlOptions(collapsed = FALSE)
-        ) %>%
-        addScaleBar()
+      # Generar mapa con mapview y extraer el leaflet widget
+      mapview::mapview(
+        r,
+        col.regions = pal,
+        layer.name  = paste("Banda", input$band),
+        na.color    = "transparent",
+        alpha       = 0.85
+      )@map
     })
 
     # ── Gráfico ggplot con tidyterra ──────────────────────────
@@ -221,7 +193,9 @@ mod_raster_server <- function(id, shared) {
     output$histogram <- renderPlot({
       req(raster_band())
       r    <- raster_band()
-      vals <- terra::values(r, na.rm = TRUE)
+      vals <- as.vector(terra::values(r, na.rm = TRUE))
+
+      validate(need(length(vals) > 0, "Sin valores para graficar."))
 
       df <- data.frame(v = vals)
 
