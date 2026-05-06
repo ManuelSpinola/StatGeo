@@ -128,14 +128,32 @@ mod_raster_server <- function(id, shared) {
         r <- terra::project(r, "EPSG:4326")
       }
 
-      vals     <- terra::values(r, na.rm = TRUE)
-      pal_fn   <- if (input$reverse_pal)
+      # Reducir resolución si el raster es muy grande (> 1M celdas)
+      if (terra::ncell(r) > 1e6) {
+        factor <- ceiling(sqrt(terra::ncell(r) / 1e6))
+        r <- terra::aggregate(r, fact = factor, fun = "mean", na.rm = TRUE)
+      }
+
+      vals <- terra::values(r, na.rm = TRUE)
+
+      # Validar que hay valores para mapear
+      validate(need(length(vals) > 0, "El raster no tiene valores válidos para mostrar."))
+
+      pal_fn <- if (input$reverse_pal)
         colorNumeric(rev(get_palette(input$raster_pal)), vals, na.color = NA)
       else
         colorNumeric(get_palette(input$raster_pal), vals, na.color = NA)
 
-      # Convertir a raster de R para leaflet
-      r_raster <- raster::raster(r)
+      # Convertir a raster de R para leaflet con manejo de error
+      r_raster <- tryCatch(
+        raster::raster(r),
+        error = function(e) {
+          showNotification("No se pudo convertir el raster para el mapa interactivo.", type = "warning")
+          NULL
+        }
+      )
+
+      validate(need(!is.null(r_raster), "No se pudo generar el mapa interactivo. Usá la pestaña 'Gráfico ggplot'."))
 
       leaflet() %>%
         addProviderTiles(providers$CartoDB.DarkMatter, group = "Dark") %>%
@@ -145,9 +163,9 @@ mod_raster_server <- function(id, shared) {
         addLegend("bottomright", pal = pal_fn, values = vals,
                   title = paste("Banda", input$band), opacity = 0.9) %>%
         addLayersControl(
-          baseGroups  = c("Light", "Dark", "Satélite"),
+          baseGroups    = c("Light", "Dark", "Satélite"),
           overlayGroups = c("Raster"),
-          options     = layersControlOptions(collapsed = FALSE)
+          options       = layersControlOptions(collapsed = FALSE)
         ) %>%
         addScaleBar()
     })
