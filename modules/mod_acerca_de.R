@@ -176,6 +176,14 @@ https://www.R-project.org/"
             style = "background: var(--bs-secondary-bg); border-left: 3px solid #6c757d; border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: 0.8em; white-space: pre-wrap;",
             "Spínola, M. (2026). StatGeo: Análisis y visualización espacial
 [Aplicación web]. StatSuite. https://statsuite.netlify.app"
+          ),
+
+          p(class = "text-muted small fw-bold mt-3 mb-1", "ASISTENCIA EN DESARROLLO"),
+          tags$pre(
+            style = "background: var(--bs-secondary-bg); border-left: 3px solid #6c757d; border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: 0.8em; white-space: pre-wrap;",
+            "Anthropic. (2026). Claude (claude-sonnet-4-6) [Modelo de lenguaje].
+El desarrollo de esta aplicación contó con asistencia de Claude
+como herramienta de programación. https://www.anthropic.com"
           )
         )
       )
