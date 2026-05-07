@@ -1,7 +1,7 @@
 # ============================================================
 # mod_vector.R — Módulo de visualización vectorial (v2)
 # Soporta: Point, MultiPoint, Line, MultiLine, Polygon, MultiPolygon
-# Mapas: interactivo (leaflet) + estático (ggplot2 + sf)
+# Mapas: interactivo (mapview) + estático (ggplot2 + sf)
 # ============================================================
 
 
@@ -19,7 +19,7 @@ mod_vector_ui <- function(id) {
          "Tipo de mapa"),
 
       radioButtons(ns("map_type"), NULL,
-                   choices  = c("Interactivo (Leaflet)" = "leaflet",
+                   choices  = c("Interactivo (mapview)" = "leaflet",
                                 "Estatico (ggplot2)"    = "ggplot"),
                    selected = "leaflet",
                    inline   = TRUE),
@@ -49,8 +49,6 @@ mod_vector_ui <- function(id) {
                                 "Satelite (ESRI)"   = "Esri.WorldImagery",
                                 "Topo (ESRI)"       = "Esri.WorldTopoMap"),
                     selected = "CartoDB.Positron"),
-        sliderInput(ns("point_radius"), "Tamanio de puntos:",
-                    min = 2, max = 15, value = 5, step = 1),
         sliderInput(ns("fill_opacity"), "Opacidad de relleno:",
                     min = 0.1, max = 1, value = 0.7, step = 0.05)
       ),
@@ -242,42 +240,39 @@ mod_vector_server <- function(id, shared) {
       )
     })
 
-    # ── MAPA LEAFLET (interactivo) ────────────────────────────
+    # ── MAPA MAPVIEW (interactivo) ────────────────────────────
     output$map_leaflet <- renderLeaflet({
       req(sf_filtered())
       sf_obj   <- sf::st_transform(sf_filtered(), 4326)
       color_by <- input$color_col
       pal_name <- input$color_pal %||% "viridis"
-      radius   <- input$point_radius %||% 5
       opacity  <- input$fill_opacity %||% 0.7
       basemap  <- input$basemap %||% "CartoDB.Positron"
 
-      m <- leaflet() %>%
-        addProviderTiles(basemap) %>%
-        addScaleBar(position = "bottomleft")
+      mapview::mapviewOptions(basemaps = basemap)
 
-      # Construir popups
-      popup_html <- build_popups(sf_obj)
-
-      # Con o sin variable de color
       has_color <- !is.null(color_by) && color_by != "" &&
         color_by %in% names(sf_obj)
 
-      if (has_color) {
-        col_data <- sf_obj[[color_by]]
-        pal <- if (is.numeric(col_data))
-          colorNumeric(pal_name,  col_data, na.color = "#aaaaaa")
-        else
-          colorFactor(pal_name,  col_data, na.color = "#aaaaaa")
-
-        m <- add_layer(m, sf_obj, col_data, pal, popup_html,
-                       radius, opacity, color_by)
+      mv <- if (has_color) {
+        mapview::mapview(
+          sf_obj,
+          zcol          = color_by,
+          col.regions   = get_mv_palette(pal_name),
+          alpha.regions = opacity,
+          layer.name    = color_by
+        )
       } else {
-        m <- add_layer(m, sf_obj, col_data = NULL, pal = NULL,
-                       popup_html, radius, opacity)
+        mapview::mapview(
+          sf_obj,
+          col.regions   = colores$secundario,
+          color         = colores$primario,
+          alpha.regions = opacity,
+          layer.name    = "Vectorial"
+        )
       }
 
-      m
+      mv@map
     })
 
     # ── MAPA GGPLOT (estatico) ────────────────────────────────
@@ -436,81 +431,18 @@ mod_vector_server <- function(id, shared) {
   })
 }
 
-# ── Helper: construir popups HTML ────────────────────────────
-build_popups <- function(sf_obj) {
-  df <- sf::st_drop_geometry(sf_obj)
-  # Limitar a 10 columnas para popups legibles
-  cols <- names(df)[seq_len(min(10, ncol(df)))]
-  df   <- df[, cols, drop = FALSE]
-
-  lapply(seq_len(nrow(df)), function(i) {
-    rows <- mapply(function(nm, val) {
-      sprintf("<tr><td style='padding:2px 6px;font-weight:600;color:#555'>%s</td><td style='padding:2px 6px'>%s</td></tr>",
-              nm, as.character(val))
-    }, names(df), as.character(unlist(df[i, ])))
-    paste0("<table style='font-size:12px;border-collapse:collapse'>",
-           paste(rows, collapse = ""), "</table>")
-  })
-}
-
-# ── Helper: agregar capa al mapa leaflet segun geometria ──────
-add_layer <- function(m, sf_obj, col_data, pal, popups,
-                      radius = 5, opacity = 0.7,
-                      legend_title = NULL) {
-
-  gt <- toupper(as.character(
-    sf::st_geometry_type(sf_obj, by_geometry = FALSE)))
-
-  has_pal <- !is.null(pal) && !is.null(col_data)
-
-  color_vec <- if (has_pal) pal(col_data) else colores$primario
-  fill_vec  <- if (has_pal) pal(col_data) else colores$secundario
-
-  if (grepl("POINT|MULTIPOINT", gt)) {
-    m <- m %>% addCircleMarkers(
-      data        = sf_obj,
-      radius      = radius,
-      color       = color_vec,
-      fillColor   = color_vec,
-      fillOpacity = opacity,
-      weight      = 1,
-      popup       = popups
-    )
-  } else if (grepl("LINE|LINESTRING", gt)) {
-    m <- m %>% addPolylines(
-      data   = sf_obj,
-      color  = color_vec,
-      weight = 2,
-      popup  = popups
-    )
-  } else {
-    # Poligonos y multipoligonos
-    m <- m %>% addPolygons(
-      data        = sf_obj,
-      fillColor   = fill_vec,
-      color       = "#444444",
-      fillOpacity = opacity,
-      weight      = 0.8,
-      popup       = popups,
-      highlight   = highlightOptions(
-        weight        = 2,
-        color         = "#ffffff",
-        fillOpacity   = opacity + 0.1,
-        bringToFront  = TRUE
-      )
-    )
-  }
-
-  # Leyenda
-  if (has_pal && !is.null(legend_title)) {
-    m <- m %>% addLegend(
-      "bottomright",
-      pal     = pal,
-      values  = col_data,
-      title   = legend_title,
-      opacity = 0.85
-    )
-  }
-
-  m
+# ── Helper: paleta de colores para mapview ───────────────────
+get_mv_palette <- function(name) {
+  switch(name,
+         "viridis"  = viridisLite::viridis(256),
+         "magma"    = viridisLite::magma(256),
+         "plasma"   = viridisLite::plasma(256),
+         "inferno"  = viridisLite::inferno(256),
+         "RdYlGn"   = colorRampPalette(RColorBrewer::brewer.pal(11, "RdYlGn"))(256),
+         "Blues"    = colorRampPalette(RColorBrewer::brewer.pal(9,  "Blues"))(256),
+         "Spectral" = colorRampPalette(RColorBrewer::brewer.pal(11, "Spectral"))(256),
+         "Set1"     = RColorBrewer::brewer.pal(9, "Set1"),
+         "Dark2"    = RColorBrewer::brewer.pal(8, "Dark2"),
+         viridisLite::viridis(256)
+  )
 }

@@ -289,11 +289,52 @@ mod_integracion_server <- function(id, shared) {
     output$descargar_mapa <- downloadHandler(
       filename = function() paste0("integracion_", Sys.Date(), ".png"),
       content  = function(file) {
-        notify_wrn("Para exportar con todas las capas us\u00e1 el screenshot del navegador.")
-        mapview::mapshot(
-          leaflet() %>% addProviderTiles(input$basemap %||% "CartoDB.Positron"),
-          file = file
-        )
+        tiene_vec <- !is.null(shared$sf_data)
+        tiene_rst <- !is.null(shared$raster_data)
+        vec_vis   <- isTRUE(input$vec_visible)
+        rst_vis   <- isTRUE(input$rst_visible)
+
+        mv <- NULL
+
+        # Raster primero (capa base)
+        if (tiene_rst && rst_vis) {
+          rst <- rst_wgs84()
+          pal_cols <- switch(input$rst_paleta %||% "viridis",
+                             "viridis" = viridisLite::viridis(256),
+                             "magma"   = viridisLite::magma(256),
+                             "inferno" = viridisLite::inferno(256),
+                             "plasma"  = viridisLite::plasma(256),
+                             "cividis" = viridisLite::cividis(256),
+                             "grays"   = gray.colors(256, start = 0.9, end = 0.1),
+                             "terrain" = terrain.colors(256),
+                             viridisLite::viridis(256)
+          )
+          mv <- mapview::mapview(
+            rst[[1]],
+            col.regions = pal_cols,
+            alpha       = input$rst_opacidad %||% 0.8,
+            layer.name  = names(rst)[1]
+          )
+        }
+
+        # Vectorial encima
+        if (tiene_vec && vec_vis) {
+          mv_vec <- mapview::mapview(
+            vec_wgs84(),
+            col.regions   = colores$secundario,
+            color         = colores$primario,
+            alpha.regions = input$vec_opacidad %||% 0.7,
+            layer.name    = "Vectorial"
+          )
+          mv <- if (is.null(mv)) mv_vec else mv + mv_vec
+        }
+
+        if (is.null(mv)) {
+          notify_wrn("No hay capas visibles para exportar.")
+          return()
+        }
+
+        mapview::mapshot(mv, file = file)
       }
     )
 
