@@ -99,7 +99,7 @@ mod_vector_ui <- function(id) {
       card(
         card_header(
           class = "d-flex justify-content-between align-items-center",
-          div(icon("map"), " Interactivo"),
+          div(icon("map"), " Interactivo (mapview)"),
           uiOutput(ns("map_header_info"))
         ),
         card_body(
