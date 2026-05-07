@@ -14,18 +14,6 @@ mod_vector_ui <- function(id) {
       width = 300,
       title = "Opciones",
 
-      # ── Tipo de mapa ──────────────────────────────────────
-      h6(class = "text-muted fw-bold text-uppercase small",
-         "Tipo de mapa"),
-
-      radioButtons(ns("map_type"), NULL,
-                   choices  = c("Interactivo (mapview)" = "leaflet",
-                                "Estatico (ggplot2)"    = "ggplot"),
-                   selected = "leaflet",
-                   inline   = TRUE),
-
-      hr(),
-
       # ── Variable para colorear ────────────────────────────
       h6(class = "text-muted fw-bold text-uppercase small",
          "Visualizacion"),
@@ -39,31 +27,29 @@ mod_vector_ui <- function(id) {
                               "Dark2"),
                   selected = "viridis"),
 
-      # Opciones especificas del mapa interactivo
-      conditionalPanel(
-        condition = sprintf("input['%s'] == 'leaflet'", ns("map_type")),
-        helpText(icon("layer-group"),
-                 "El mapa interactivo incluye selector de fondo",
-                 "(CartoDB, OpenStreetMap, Satelite, etc.)",
-                 "directamente en el panel de capas del mapa."),
-        sliderInput(ns("fill_opacity"), "Opacidad de relleno:",
-                    min = 0.1, max = 1, value = 0.7, step = 0.05)
-      ),
+      sliderInput(ns("fill_opacity"), "Opacidad de relleno:",
+                  min = 0.1, max = 1, value = 0.7, step = 0.05),
 
-      # Opciones especificas del mapa estatico
-      conditionalPanel(
-        condition = sprintf("input['%s'] == 'ggplot'", ns("map_type")),
-        selectInput(ns("gg_theme"), "Tema:",
-                    choices = c("Minimal"   = "minimal",
-                                "Void"      = "void",
-                                "Classic"   = "classic",
-                                "Dark"      = "dark"),
-                    selected = "minimal"),
-        checkboxInput(ns("gg_north"), "Mostrar norte / escala",
-                      value = FALSE),
-        downloadButton(ns("download_plot"), "Guardar PNG",
-                       class = "btn-sm btn-outline-secondary w-100 mt-1")
-      ),
+      helpText(icon("layer-group"),
+               "El mapa interactivo incluye selector de fondo",
+               "(CartoDB, OpenStreetMap, Satelite, etc.)",
+               "directamente en el panel de capas del mapa."),
+
+      hr(),
+
+      # ── Opciones mapa estático ────────────────────────────
+      h6(class = "text-muted fw-bold text-uppercase small",
+         "Mapa estatico"),
+
+      selectInput(ns("gg_theme"), "Tema:",
+                  choices = c("Minimal"   = "minimal",
+                              "Void"      = "void",
+                              "Classic"   = "classic",
+                              "Dark"      = "dark"),
+                  selected = "minimal"),
+
+      downloadButton(ns("download_plot"), "Guardar PNG",
+                     class = "btn-sm btn-outline-secondary w-100 mt-1"),
 
       hr(),
 
@@ -107,28 +93,35 @@ mod_vector_ui <- function(id) {
 
     # ── Panel principal ──────────────────────────────────────
     layout_columns(
-      col_widths = 12,
+      col_widths = c(6, 6, 12),
 
-      # Mapa (interactivo o estatico segun radio)
+      # Mapa interactivo (mapview)
       card(
         card_header(
           class = "d-flex justify-content-between align-items-center",
-          div(icon("map"), " Mapa"),
+          div(icon("map"), " Interactivo"),
           uiOutput(ns("map_header_info"))
         ),
         card_body(
           class = "p-0",
-          style = "min-height: 500px;",
-          # Mapa leaflet
-          conditionalPanel(
-            condition = sprintf("input['%s'] == 'leaflet'", ns("map_type")),
-            leafletOutput(ns("map_leaflet"), height = "500px")
-          ),
-          # Mapa ggplot
-          conditionalPanel(
-            condition = sprintf("input['%s'] == 'ggplot'", ns("map_type")),
-            plotOutput(ns("map_ggplot"), height = "500px")
-          )
+          style = "height: 420px;",
+          leafletOutput(ns("map_leaflet"), height = "100%")
+        )
+      ),
+
+      # Mapa estático (ggplot2)
+      card(
+        card_header(
+          class = "d-flex justify-content-between align-items-center",
+          div(icon("image"), " Estatico (ggplot2)"),
+          downloadButton(ns("download_plot"), "",
+                         icon  = icon("download"),
+                         class = "btn-sm btn-outline-secondary")
+        ),
+        card_body(
+          class = "p-0",
+          style = "height: 420px;",
+          plotOutput(ns("map_ggplot"), height = "100%")
         )
       ),
 
@@ -248,8 +241,9 @@ mod_vector_server <- function(id, shared) {
       # Ofrecer todos los basemaps disponibles en el control del mapa
       mapview::mapviewOptions(
         basemaps = c("CartoDB.Positron", "CartoDB.DarkMatter",
-                     "OpenStreetMap", "Esri.WorldImagery",
-                     "Esri.WorldTopoMap", "Esri.WorldShadedRelief")
+                     "OpenStreetMap", "OpenTopoMap",
+                     "Esri.WorldImagery", "Esri.WorldTopoMap",
+                     "Esri.WorldShadedRelief")
       )
 
       has_color <- !is.null(color_by) && color_by != "" &&

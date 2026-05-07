@@ -190,6 +190,23 @@ mod_upload_ui <- function(id) {
       )
     ),
 
+    # ── Aviso de sesión ─────────────────────────────────────────
+    div(
+      class = "alert alert-warning d-flex align-items-start gap-3 mt-3 mb-2 small",
+      icon("clock", style = "font-size:1.2rem; margin-top:2px; flex-shrink:0;"),
+      div(
+        tags$strong("Sesión temporal — 5 minutos de inactividad"),
+        tags$br(),
+        "StatGeo se ejecuta en un servidor que cierra la sesión tras ",
+        tags$strong("5 minutos sin interacción"),
+        ". Al reconectar, la página se recarga y ",
+        tags$strong("los datos cargados se pierden"),
+        " — tendrás que volver a subirlos. ",
+        "Si vas a alejarte de la app, descargá primero tus resultados ",
+        "(GeoJSON, GeoTIFF o PNG) desde cada módulo."
+      )
+    ),
+
     # ── Panel de estado global ──────────────────────────────────
     card(
       card_header(
