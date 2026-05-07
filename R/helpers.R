@@ -100,11 +100,15 @@ tema_app <- bs_theme(
 ) |>
   bs_add_rules("
   .navbar { background-color: #1170AA !important; }
-  .navbar-brand, .nav-link { color: #ffffff !important; }
-  .nav-link.active { border-bottom: 2px solid #FC7D0B; }
+  .navbar-brand { color: #ffffff !important; display: flex !important;
+                  align-items: center !important;
+                  padding-top: 0 !important; padding-bottom: 0 !important; }
+  .navbar .nav-link { color: #ffffff !important; }
+  .navbar .nav-link.active { border-bottom: 2px solid #FC7D0B; }
   .btn-primary { background-color: #FC7D0B; border-color: #FC7D0B; color: #ffffff; }
   .btn-primary:hover { background-color: #d4680a; border-color: #d4680a; }
-  .navbar-brand { display: flex !important; align-items: center !important; padding-top: 0 !important; padding-bottom: 0 !important; }
+  .card-header { background-color: #EEF3FA; font-weight: 700;
+                 border-bottom: 2px solid #C8D9EC; }
 ")
 
 # ── Escala de color para gráficos (ggplot2) ───────────────
