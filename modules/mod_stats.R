@@ -50,11 +50,12 @@ mod_stats_ui <- function(id) {
 
       selectInput(ns("plot_type"), "Tipo de gráfico:",
                   choices = c(
-                    "Histograma"       = "hist",
-                    "Boxplot"          = "box",
-                    "Densidad"         = "density",
-                    "Dispersión (2 vars)" = "scatter",
-                    "Correlaciones"    = "corr"
+                    "Histograma"              = "hist",
+                    "Densidad"                = "density",
+                    "Boxplot"                 = "box",
+                    "Violin"                  = "violin",
+                    "Gráfico de puntos (X vs Y)" = "scatter",
+                    "Correlaciones"           = "corr"
                   )),
 
       conditionalPanel(
@@ -74,7 +75,7 @@ mod_stats_ui <- function(id) {
       card(
         card_header(icon("table-list"), " Estadísticas descriptivas"),
         card_body(
-          uiOutput(ns("stats_output"))
+          tableOutput(ns("stats_output"))
         )
       ),
 
@@ -86,11 +87,15 @@ mod_stats_ui <- function(id) {
         )
       ),
 
-      # Reporte en texto (easystats::report)
+      # Reporte en texto
       card(
         col_widths = 12,
-        card_header(icon("file-alt"), " Reporte automático (easystats)"),
+        card_header(icon("file-alt"), " Interpretación"),
         card_body(
+          tags$style(HTML(sprintf(
+            "#%s { white-space: pre-wrap; word-wrap: break-word; }",
+            NS(id)("auto_report")
+          ))),
           verbatimTextOutput(ns("auto_report"))
         )
       ),
@@ -169,37 +174,54 @@ mod_stats_server <- function(id, shared) {
       req(active_data(), input$var1)
       df  <- active_data()
       col <- df[[input$var1]]
+      x   <- col[!is.na(col)]
+      n   <- length(x)
+      se  <- sd(x) / sqrt(n)
+      ic  <- t.test(x, conf.level = 0.95)$conf.int
+      moda <- as.numeric(names(sort(table(x), decreasing = TRUE))[1])
 
       data.frame(
-        Estadística = c("N", "NAs", "Mínimo", "Q1", "Mediana",
-                        "Media", "Q3", "Máximo", "Desv. Est.",
-                        "Asimetría", "Curtosis"),
+        Estadístico = c(
+          "N", "NAs",
+          "Media", "Error estándar",
+          "IC 95% — límite inferior", "IC 95% — límite superior",
+          "Mediana", "Moda",
+          "Desv. estándar", "Varianza", "CV (%)",
+          "Mínimo", "Máximo",
+          "Q1", "Q3", "IQR",
+          "Asimetría", "Curtosis"
+        ),
+        Descripción = c(
+          "Observaciones válidas", "Valores perdidos",
+          "Tendencia central", "Precisión de la media",
+          "Límite inferior del intervalo de confianza", "Límite superior del intervalo de confianza",
+          "Centro resistente a valores extremos", "Valor más frecuente",
+          "Dispersión promedio respecto a la media", "Dispersión al cuadrado", "Dispersión relativa a la media",
+          "Valor más bajo observado", "Valor más alto observado",
+          "25% de los datos están por debajo", "75% de los datos están por debajo", "Rango del 50% central",
+          "Forma de la distribución (0 = simétrica)", "Peso de las colas (0 = normal)"
+        ),
         Valor = round(c(
-          sum(!is.na(col)),
-          sum(is.na(col)),
-          min(col, na.rm = TRUE),
-          quantile(col, 0.25, na.rm = TRUE),
-          median(col, na.rm = TRUE),
-          mean(col, na.rm = TRUE),
-          quantile(col, 0.75, na.rm = TRUE),
-          max(col, na.rm = TRUE),
-          sd(col, na.rm = TRUE),
-          moments_skewness(col),
-          moments_kurtosis(col)
+          n, sum(is.na(col)),
+          mean(x), se,
+          ic[1], ic[2],
+          median(x), moda,
+          sd(x), var(x), sd(x) / mean(x) * 100,
+          min(x), max(x),
+          quantile(x, 0.25), quantile(x, 0.75), IQR(x),
+          moments_skewness(x), moments_kurtosis(x)
         ), 4)
       )
     })
 
-    output$stats_output <- renderUI({
+    output$stats_output <- renderTable({
       req(stats_df())
-
-      renderTable(stats_df(), striped = TRUE, bordered = TRUE,
-                  small = TRUE, width = "100%")()
-    })
+      stats_df()
+    }, striped = TRUE, bordered = TRUE, width = "100%")
 
     # ── Gráfico principal ─────────────────────────────────────
     output$main_plot <- renderPlot({
-      input$run_analysis
+      req(input$run_analysis > 0)
       req(active_data(), input$var1)
 
       df   <- active_data()
@@ -219,6 +241,12 @@ mod_stats_server <- function(id, shared) {
           base_theme +
           labs(title = paste("Distribución de", var1), x = var1, y = "Densidad")
 
+      } else if (type == "density") {
+        ggplot(df, aes(x = .data[[var1]])) +
+          geom_density(fill = colores$secundario, alpha = 0.5, color = colores$primario, linewidth = 1.2) +
+          base_theme +
+          labs(title = paste("Densidad de", var1), x = var1, y = "Densidad")
+
       } else if (type == "box") {
         ggplot(df, aes(y = .data[[var1]])) +
           geom_boxplot(fill = colores$secundario, alpha = 0.7, color = colores$primario,
@@ -226,11 +254,17 @@ mod_stats_server <- function(id, shared) {
           base_theme +
           labs(title = paste("Boxplot de", var1), y = var1)
 
-      } else if (type == "density") {
-        ggplot(df, aes(x = .data[[var1]])) +
-          geom_density(fill = colores$secundario, alpha = 0.5, color = colores$primario, linewidth = 1.2) +
+      } else if (type == "violin") {
+        ggplot(df, aes(x = "", y = .data[[var1]])) +
+          geom_violin(fill = colores$secundario, color = colores$primario,
+                      alpha = 0.6, linewidth = 0.8) +
+          geom_jitter(color = colores$primario, width = 0.08, alpha = 0.5, size = 1.8) +
+          stat_summary(fun = mean, geom = "point", shape = 18,
+                       size = 4, color = colores$acento) +
           base_theme +
-          labs(title = paste("Densidad de", var1), x = var1, y = "Densidad")
+          labs(title = paste("Violin de", var1),
+               x = NULL, y = var1,
+               caption = "◆ = media  |  puntos = observaciones individuales")
 
       } else if (type == "scatter") {
         req(input$var2)
@@ -261,32 +295,94 @@ mod_stats_server <- function(id, shared) {
       }
     })
 
-    # ── Reporte automático (easystats) ────────────────────────
+    # ── Reporte automático ────────────────────────────────────
     output$auto_report <- renderText({
-      input$run_analysis
+      req(input$run_analysis > 0)
       req(active_data(), input$var1)
 
-      df  <- active_data()
-      col <- df[[input$var1]]
+      df   <- active_data()
+      col  <- df[[input$var1]]
+      x    <- col[!is.na(col)]
+      n    <- length(x)
+      mn   <- mean(x)
+      med  <- median(x)
+      de   <- sd(x)
+      se   <- de / sqrt(n)
+      cv   <- de / mn * 100
+      ic   <- t.test(x, conf.level = 0.95)$conf.int
+      asim <- moments_skewness(x)
+      kurt <- moments_kurtosis(x)
+      var  <- input$var1
 
-      tryCatch({
-        if (exists("report") && requireNamespace("report", quietly = TRUE)) {
-          r <- report::report(col)
-          as.character(r)
+      # ── Párrafo 1: media, DE, SE, IC ──
+      cv_interp <- dplyr::case_when(
+        cv < 15  ~ "baja variabilidad",
+        cv < 30  ~ "variabilidad moderada",
+        cv < 50  ~ "variabilidad alta",
+        TRUE     ~ "variabilidad muy alta"
+      )
+      p1 <- sprintf(
+        "La variable '%s' tiene una media de %.4f (DE: %.4f, CV: %.1f%% - %s) con un error estándar de %.4f. El intervalo de confianza al 95%% sugiere que el valor poblacional real se encuentra entre %.4f y %.4f.",
+        var, mn, de, cv, cv_interp, se, ic[1], ic[2]
+      )
+
+      # ── Párrafo 2: media vs mediana ──
+      p2 <- if (abs(mn - med) / de < 0.1) {
+        sprintf(
+          "La media (%.4f) y la mediana (%.4f) son muy similares, lo que sugiere que los datos son aproximadamente simétricos y no hay valores extremos que distorsionen la media.",
+          mn, med
+        )
+      } else if (mn > med) {
+        sprintf(
+          "La mediana (%.4f) es menor que la media (%.4f), una primera se\u00f1al de asimetría positiva - algunos valores altos están jalando la media hacia arriba.",
+          med, mn
+        )
+      } else {
+        sprintf(
+          "La mediana (%.4f) es mayor que la media (%.4f), una primera se\u00f1al de asimetría negativa - algunos valores bajos están jalando la media hacia abajo.",
+          med, mn
+        )
+      }
+
+      # ── Párrafo 3: asimetría ──
+      p3 <- dplyr::case_when(
+        asim >  1    ~ sprintf("La distribución presenta asimetría positiva fuerte (g₁ = %.4f): los valores se concentran en la parte baja de la escala con una cola hacia valores altos. En variables ecológicas esto es común (abundancias, áreas, concentraciones). Se recomienda evaluar una transformación logarítmica antes de aplicar modelos paramétricos.", asim),
+        asim >  0.5  ~ sprintf("La distribución presenta asimetría positiva moderada (g₁ = %.4f): hay una tendencia hacia valores bajos con cola hacia la derecha. Muchas variables ecológicas presentan este patrón de forma natural.", asim),
+        asim < -1    ~ sprintf("La distribución presenta asimetría negativa fuerte (g₁ = %.4f): los valores se concentran en la parte alta de la escala con una cola hacia valores bajos. Revisá si hay un límite superior natural en la variable.", asim),
+        asim < -0.5  ~ sprintf("La distribución presenta asimetría negativa moderada (g₁ = %.4f): hay una tendencia hacia valores altos con cola hacia la izquierda.", asim),
+        TRUE         ~ sprintf("La distribución es aproximadamente simétrica (g₁ = %.4f): los valores se distribuyen de forma equilibrada alrededor de la media.", asim)
+      )
+
+      # ── Párrafo 4: curtosis ──
+      p4 <- dplyr::case_when(
+        kurt >  1 ~ sprintf("La curtosis es alta - leptocúrtica (g₂ = %.4f): hay más valores extremos de lo esperado en una distribución normal. Revisá posibles valores atípicos antes de modelar.", kurt),
+        kurt < -1 ~ sprintf("La curtosis es baja - platicúrtica (g₂ = %.4f): la distribución es más plana que la normal, con menos valores extremos. Los datos están más uniformemente dispersos.", kurt),
+        TRUE      ~ sprintf("La curtosis es cercana a la normal - mesocúrtica (g₂ = %.4f): las colas tienen un peso similar al esperado en una distribución normal.", kurt)
+      )
+
+      # ── Párrafo 5: Shapiro-Wilk ──
+      p5 <- tryCatch({
+        if (n < 3) {
+          "Prueba de normalidad: se necesitan al menos 3 observaciones."
+        } else if (n > 5000) {
+          "Prueba de normalidad (Shapiro-Wilk): no aplicable con más de 5000 observaciones. Usá el gráfico Q-Q o la prueba de Kolmogorov-Smirnov."
         } else {
-          sprintf(
-            "Variable: %s\nN = %d | NAs = %d\nMedia = %.4f | Mediana = %.4f\nDesv. Est. = %.4f\nRango: [%.4f, %.4f]\nAsimetría = %.4f | Curtosis = %.4f",
-            input$var1,
-            sum(!is.na(col)), sum(is.na(col)),
-            mean(col, na.rm = TRUE), median(col, na.rm = TRUE),
-            sd(col, na.rm = TRUE),
-            min(col, na.rm = TRUE), max(col, na.rm = TRUE),
-            moments_skewness(col), moments_kurtosis(col)
-          )
+          sw <- shapiro.test(x)
+          if (sw$p.value < 0.05) {
+            sprintf(
+              "Prueba de Shapiro-Wilk: W = %.4f, p = %.4f → Hay evidencia estadística de no normalidad (p < 0.05)",
+              sw$statistic, sw$p.value
+            )
+          } else {
+            sprintf(
+              "Prueba de Shapiro-Wilk: W = %.4f, p = %.4f → No hay evidencia suficiente para rechazar la normalidad (p ≥ 0.05). Los datos son compatibles con una distribución normal.",
+              sw$statistic, sw$p.value
+            )
+          }
         }
-      }, error = function(e) {
-        paste("Error al generar reporte:", e$message)
-      })
+      }, error = function(e) paste("Shapiro-Wilk: no disponible -", e$message))
+
+      paste(p1, p2, p3, p4, p5, sep = "\n\n")
     })
 
     # ── Código R reproducible ─────────────────────────────
@@ -352,6 +448,16 @@ mod_stats_server <- function(id, shared) {
           "       x = \"", var1, "\", y = \"Densidad\") +\n",
           "  theme_minimal()\n"
         )
+      } else if (tipo == "density") {
+        paste0(
+          "# ── Densidad ──\n",
+          "ggplot(data.frame(x = col), aes(x = x)) +\n",
+          "  geom_density(fill = \"#5FA2CE\", alpha = 0.5,\n",
+          "               color = \"#1170AA\", linewidth = 1.2) +\n",
+          "  labs(title = \"Densidad de ", var1, "\",\n",
+          "       x = \"", var1, "\", y = \"Densidad\") +\n",
+          "  theme_minimal()\n"
+        )
       } else if (tipo == "box") {
         paste0(
           "# ── Boxplot ──\n",
@@ -363,14 +469,19 @@ mod_stats_server <- function(id, shared) {
           "       y = \"", var1, "\") +\n",
           "  theme_minimal()\n"
         )
-      } else if (tipo == "density") {
+      } else if (tipo == "violin") {
         paste0(
-          "# ── Densidad ──\n",
-          "ggplot(data.frame(x = col), aes(x = x)) +\n",
-          "  geom_density(fill = \"#5FA2CE\", alpha = 0.5,\n",
-          "               color = \"#1170AA\", linewidth = 1.2) +\n",
-          "  labs(title = \"Densidad de ", var1, "\",\n",
-          "       x = \"", var1, "\", y = \"Densidad\") +\n",
+          "# ── Violin ──\n",
+          "ggplot(data.frame(x = col), aes(x = \"\", y = x)) +\n",
+          "  geom_violin(fill = \"#5FA2CE\", color = \"#1170AA\",\n",
+          "              alpha = 0.6, linewidth = 0.8) +\n",
+          "  geom_jitter(color = \"#1170AA\", width = 0.08,\n",
+          "              alpha = 0.5, size = 1.8) +\n",
+          "  stat_summary(fun = mean, geom = \"point\", shape = 18,\n",
+          "               size = 4, color = \"#FC7D0B\") +\n",
+          "  labs(title = \"Violin de ", var1, "\",\n",
+          "       x = NULL, y = \"", var1, "\",\n",
+          "       caption = \"\u25c6 = media  |  puntos = observaciones individuales\") +\n",
           "  theme_minimal()\n"
         )
       } else if (tipo == "scatter") {

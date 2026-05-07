@@ -136,11 +136,13 @@ mod_upload_ui <- function(id) {
             tags$p(class = "mb-1 fw-bold",
                    "¿Qué son los datos raster?"),
             tags$p(class = "mb-0 text-muted",
-                   "Representan variables continuas mediante una ",
+                   "Representan información geográfica mediante una ",
                    tags$strong("cuadrícula de celdas (píxeles)"), ", ",
-                   "donde cada celda tiene un valor numérico. ",
-                   "Son ideales para fenómenos que varían de forma continua en el espacio. ",
-                   "Ejemplos: temperatura, elevación, índices de vegetación (NDVI), precipitación.")
+                   "donde cada celda tiene un valor numérico. Existen dos tipos: ",
+                   tags$strong("continuos"), " — fenómenos que varían gradualmente en el espacio ",
+                   "(temperatura, elevación, NDVI, precipitación) — y ",
+                   tags$strong("categóricos"), " — donde cada valor representa una clase ",
+                   "(uso del suelo, cobertura vegetal, tipos de suelo, clasificaciones de vegetación).")
           ),
 
           fileInput(
