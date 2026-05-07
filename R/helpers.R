@@ -119,3 +119,19 @@ scale_fill_tableau_cb <- function(...) {
 scale_color_tableau_cb <- function(...) {
   scale_color_manual(values = colores$tableau, ...)
 }
+
+# ── Código R reproducible: encabezado estándar ────────────
+# Usada por todos los módulos de StatSuite que generan código R.
+# Parámetros:
+#   app    — "StatDesign", "StatFlow", "StatGeo", "StatMonitor"
+#   modulo — nombre del módulo, p.ej. "Estadísticas"
+encabezado_script <- function(app, modulo) {
+  paste0(
+    "# ============================================\n",
+    "# ", app, " · StatSuite\n",
+    "# Módulo: ", modulo, "\n",
+    "# Generado: ", format(Sys.Date(), "%Y-%m-%d"), "\n",
+    "# Manuel Spínola · ICOMVIS · UNA · Costa Rica\n",
+    "# ============================================\n\n"
+  )
+}

@@ -93,6 +93,28 @@ mod_stats_ui <- function(id) {
         card_body(
           verbatimTextOutput(ns("auto_report"))
         )
+      ),
+
+      # Código R reproducible
+      card(
+        col_widths = 12,
+        card_header(
+          class = "d-flex justify-content-between align-items-center",
+          tagList(bs_icon("code-slash"), " Código R reproducible"),
+          downloadButton(
+            ns("descargar_script"),
+            label = "Descargar .R",
+            icon  = bs_icon("download"),
+            class = "btn-sm btn-outline-primary"
+          )
+        ),
+        card_body(
+          p(
+            "Script que reproduce este análisis con tus datos geoespaciales.",
+            class = "text-muted small mb-2"
+          ),
+          verbatimTextOutput(ns("codigo_r"))
+        )
       )
     )
   )
@@ -248,12 +270,10 @@ mod_stats_server <- function(id, shared) {
       col <- df[[input$var1]]
 
       tryCatch({
-        # Intentar con easystats::report si está disponible
         if (exists("report") && requireNamespace("report", quietly = TRUE)) {
           r <- report::report(col)
           as.character(r)
         } else {
-          # Reporte manual
           sprintf(
             "Variable: %s\nN = %d | NAs = %d\nMedia = %.4f | Mediana = %.4f\nDesv. Est. = %.4f\nRango: [%.4f, %.4f]\nAsimetría = %.4f | Curtosis = %.4f",
             input$var1,
@@ -268,6 +288,130 @@ mod_stats_server <- function(id, shared) {
         paste("Error al generar reporte:", e$message)
       })
     })
+
+    # ── Código R reproducible ─────────────────────────────
+    codigo_generado <- eventReactive(input$run_analysis, {
+      req(active_data(), input$var1)
+
+      fuente <- input$data_source
+      var1   <- input$var1
+      tipo   <- input$plot_type
+
+      encabezado <- encabezado_script("StatGeo", "Estadísticas")
+
+      # ── Bloque de carga según fuente ──
+      carga <- if (fuente == "vector") {
+        paste0(
+          "library(sf)\n",
+          "library(tidyverse)\n\n",
+          "# Cargar datos vectoriales\n",
+          "datos <- st_read(\"tu_archivo.shp\")\n\n",
+          "# Extraer atributos (sin geometría)\n",
+          "df <- st_drop_geometry(datos) |>\n",
+          "  select(where(is.numeric))\n\n",
+          "# Variable analizada\n",
+          "col <- df$`", var1, "`\n\n"
+        )
+      } else {
+        banda <- input$raster_band_stat %||% "1"
+        paste0(
+          "library(terra)\n",
+          "library(tidyverse)\n\n",
+          "# Cargar raster\n",
+          "r   <- rast(\"tu_archivo.tif\")\n",
+          "col <- values(r[[", banda, "]], na.rm = TRUE) |> as.numeric()\n\n"
+        )
+      }
+
+      # ── Estadísticas descriptivas ──
+      stats_bloque <- paste0(
+        "# ── Estadísticas descriptivas ──\n",
+        "summary(col)\n",
+        "sd(col, na.rm = TRUE)      # Desv. estándar\n",
+        "IQR(col, na.rm = TRUE)     # Rango intercuartílico\n\n",
+        "# Asimetría y curtosis (R base)\n",
+        "n  <- sum(!is.na(col))\n",
+        "mu <- mean(col, na.rm = TRUE)\n",
+        "s  <- sd(col, na.rm = TRUE)\n",
+        "asimetria <- (sum((col - mu)^3, na.rm = TRUE) / n) / s^3\n",
+        "curtosis  <- (sum((col - mu)^4, na.rm = TRUE) / n) / s^4 - 3\n",
+        "asimetria\n",
+        "curtosis\n\n"
+      )
+
+      # ── Bloque de gráfico según tipo ──
+      grafico <- if (tipo == "hist") {
+        paste0(
+          "# ── Histograma con curva de densidad ──\n",
+          "ggplot(data.frame(x = col), aes(x = x)) +\n",
+          "  geom_histogram(aes(y = after_stat(density)),\n",
+          "                 bins = 30, fill = \"#5FA2CE\",\n",
+          "                 alpha = 0.8, color = \"white\") +\n",
+          "  geom_density(color = \"#1170AA\", linewidth = 1) +\n",
+          "  labs(title = \"Distribución de ", var1, "\",\n",
+          "       x = \"", var1, "\", y = \"Densidad\") +\n",
+          "  theme_minimal()\n"
+        )
+      } else if (tipo == "box") {
+        paste0(
+          "# ── Boxplot ──\n",
+          "ggplot(data.frame(x = col), aes(y = x)) +\n",
+          "  geom_boxplot(fill = \"#5FA2CE\", alpha = 0.7,\n",
+          "               color = \"#1170AA\",\n",
+          "               outlier.color = \"#C85200\") +\n",
+          "  labs(title = \"Boxplot de ", var1, "\",\n",
+          "       y = \"", var1, "\") +\n",
+          "  theme_minimal()\n"
+        )
+      } else if (tipo == "density") {
+        paste0(
+          "# ── Densidad ──\n",
+          "ggplot(data.frame(x = col), aes(x = x)) +\n",
+          "  geom_density(fill = \"#5FA2CE\", alpha = 0.5,\n",
+          "               color = \"#1170AA\", linewidth = 1.2) +\n",
+          "  labs(title = \"Densidad de ", var1, "\",\n",
+          "       x = \"", var1, "\", y = \"Densidad\") +\n",
+          "  theme_minimal()\n"
+        )
+      } else if (tipo == "scatter") {
+        var2 <- if (!is.null(input$var2)) input$var2 else "var2"
+        paste0(
+          "# ── Dispersión ──\n",
+          "ggplot(df, aes(x = `", var1, "`, y = `", var2, "`)) +\n",
+          "  geom_point(alpha = 0.5, color = \"#1170AA\", size = 1.5) +\n",
+          "  geom_smooth(method = \"lm\", color = \"#C85200\",\n",
+          "              fill = \"#F1CE63\", alpha = 0.2) +\n",
+          "  labs(title = \"", var1, " vs ", var2, "\",\n",
+          "       x = \"", var1, "\", y = \"", var2, "\") +\n",
+          "  theme_minimal()\n"
+        )
+      } else if (tipo == "corr") {
+        paste0(
+          "# ── Matriz de correlaciones ──\n",
+          "cor_mat  <- cor(df, use = \"complete.obs\")\n",
+          "cor_long <- as.data.frame(as.table(cor_mat))\n",
+          "names(cor_long) <- c(\"Var1\", \"Var2\", \"Correlacion\")\n\n",
+          "ggplot(cor_long, aes(x = Var1, y = Var2, fill = Correlacion)) +\n",
+          "  geom_tile(color = \"white\") +\n",
+          "  geom_text(aes(label = round(Correlacion, 2)), size = 3) +\n",
+          "  scale_fill_gradient2(low = \"#C85200\", mid = \"white\",\n",
+          "                       high = \"#1170AA\", midpoint = 0,\n",
+          "                       limits = c(-1, 1)) +\n",
+          "  theme_minimal() +\n",
+          "  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +\n",
+          "  labs(title = \"Matriz de correlaciones\", x = NULL, y = NULL)\n"
+        )
+      }
+
+      paste0(encabezado, carga, stats_bloque, grafico)
+    })
+
+    output$codigo_r <- renderText({ codigo_generado() })
+
+    output$descargar_script <- downloadHandler(
+      filename = function() paste0("statgeo_stats_", format(Sys.Date(), "%Y%m%d"), ".R"),
+      content  = function(file) writeLines(codigo_generado(), file)
+    )
 
   })
 }
