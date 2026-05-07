@@ -42,13 +42,10 @@ mod_vector_ui <- function(id) {
       # Opciones especificas del mapa interactivo
       conditionalPanel(
         condition = sprintf("input['%s'] == 'leaflet'", ns("map_type")),
-        selectInput(ns("basemap"), "Mapa base:",
-                    choices = c("CartoDB Positron"  = "CartoDB.Positron",
-                                "CartoDB Dark"      = "CartoDB.DarkMatter",
-                                "OpenStreetMap"     = "OpenStreetMap",
-                                "Satelite (ESRI)"   = "Esri.WorldImagery",
-                                "Topo (ESRI)"       = "Esri.WorldTopoMap"),
-                    selected = "CartoDB.Positron"),
+        helpText(icon("layer-group"),
+                 "El mapa interactivo incluye selector de fondo",
+                 "(CartoDB, OpenStreetMap, Satelite, etc.)",
+                 "directamente en el panel de capas del mapa."),
         sliderInput(ns("fill_opacity"), "Opacidad de relleno:",
                     min = 0.1, max = 1, value = 0.7, step = 0.05)
       ),
@@ -247,9 +244,13 @@ mod_vector_server <- function(id, shared) {
       color_by <- input$color_col
       pal_name <- input$color_pal %||% "viridis"
       opacity  <- input$fill_opacity %||% 0.7
-      basemap  <- input$basemap %||% "CartoDB.Positron"
 
-      mapview::mapviewOptions(basemaps = basemap)
+      # Ofrecer todos los basemaps disponibles en el control del mapa
+      mapview::mapviewOptions(
+        basemaps = c("CartoDB.Positron", "CartoDB.DarkMatter",
+                     "OpenStreetMap", "Esri.WorldImagery",
+                     "Esri.WorldTopoMap", "Esri.WorldShadedRelief")
+      )
 
       has_color <- !is.null(color_by) && color_by != "" &&
         color_by %in% names(sf_obj)
