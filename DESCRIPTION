@@ -1,33 +1,32 @@
 Package: StatGeo
-Title: StatGeo - Visualización y análisis espacial interactivo
-Version: 1.0.0
-Description: Aplicación Shiny modular para visualización y análisis espacial interactivo
-    de datos vectoriales y raster, orientada a usuarios que requieren explorar y analizar
-    información geoespacial sin necesidad de software SIG de escritorio.
-    Parte de la suite Stat de herramientas educativas para ciencia de datos.
-Authors@R: person(
-    given  = "Manuel",
-    family = "Spínola",
-    role   = c("aut", "cre"),
-    email  = "romeo.spinola.parallada@una.cr"
-  )
-Depends: R (>= 4.1.0)
+Title: Interactive Spatial Analysis and GIS Platform
+Version: 1.1.0
+Authors@R: 
+    person("Manuel", "Spínola", 
+           email = "manuel.spinola@una.ac.cr",
+           role  = c("aut", "cre"),
+           comment = c(ORCID = ""))
+Description: A Shiny-based interactive platform for spatial analysis and GIS,
+    part of the StatSuite ecosystem. Includes modules for loading vector and
+    raster data, spatial integration, and spatial statistics. Designed for
+    teaching and research in ecology and biodiversity sciences.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
 Imports:
-    shiny,
-    bslib,
+    shiny (>= 1.8.0),
+    bslib (>= 0.7.0),
     bsicons,
+    shinyjs,
     sf,
     terra,
-    tidyterra,
-    raster,
     leaflet,
-    mapview,
-    tidyverse,
-    readxl,
-    scales,
-    DT,
-    parameters,
-    report,
-    correlation,
-    datawizard
-License: MIT
+    ggplot2,
+    dplyr,
+    golem
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+URL: https://github.com/ManuelSpinola/StatGeo
+BugReports: https://github.com/ManuelSpinola/StatGeo/issues

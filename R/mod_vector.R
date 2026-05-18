@@ -99,7 +99,7 @@ mod_vector_ui <- function(id) {
       card(
         card_header(
           class = "d-flex justify-content-between align-items-center",
-          div(icon("map"), " Interactivo (mapview)"),
+          div(icon("map"), " Interactivo"),
           uiOutput(ns("map_header_info"))
         ),
         card_body(
@@ -249,11 +249,35 @@ mod_vector_server <- function(id, shared) {
       has_color <- !is.null(color_by) && color_by != "" &&
         color_by %in% names(sf_obj)
 
+      # Asegurar tipo correcto en la columna de color
+      if (has_color) {
+        col_vals <- sf_obj[[color_by]]
+        if (is.character(col_vals) && !is.na(suppressWarnings(as.numeric(col_vals[1])))) {
+          sf_obj[[color_by]] <- as.numeric(col_vals)
+        }
+      }
+
       mv <- if (has_color) {
+        # Con zcol: pasar paleta como función, no como vector
+        pal_fn <- switch(pal_name,
+                         "viridis"  = viridisLite::viridis,
+                         "magma"    = viridisLite::magma,
+                         "plasma"   = viridisLite::plasma,
+                         "inferno"  = viridisLite::inferno,
+                         function(n) colorRampPalette(
+                           RColorBrewer::brewer.pal(
+                             min(9, max(3, n)),
+                             if (pal_name %in% c("Set1","Dark2")) pal_name
+                             else if (pal_name == "RdYlGn") "RdYlGn"
+                             else if (pal_name == "Blues")   "Blues"
+                             else                            "Spectral"
+                           )
+                         )(n)
+        )
         mapview::mapview(
           sf_obj,
           zcol          = color_by,
-          col.regions   = get_mv_palette(pal_name),
+          col.regions   = pal_fn,
           alpha.regions = opacity,
           layer.name    = color_by
         )

@@ -1,41 +1,30 @@
-# StatGeo <img src="www/hexsticker_StatGeo.png" align="right" height="120"/>
+# StatGeo <img src="inst/app/www/hexsticker_StatGeo.png" align="right" height="139"/>
 
-> Herramienta interactiva para visualización y análisis espacial de datos vectoriales y raster,
-> orientada a usuarios que aprenden análisis geoespacial sin experiencia previa en SIG.
+**StatGeo** es una plataforma interactiva para análisis espacial y SIG, parte del ecosistema [StatSuite](https://github.com/ManuelSpinola). Diseñada para enseñanza e investigación en ecología y ciencias de la biodiversidad.
 
-Parte de la suite **StatSuite**:
+## Módulos disponibles
 
-| App | Descripción | Estado |
-|-----|-------------|--------|
-| [StatDesign](https://github.com/ManuelSpinola/StatDesign) | Diseño de estudios y muestreo | ✅ Disponible |
-| [StatFlow](https://github.com/ManuelSpinola/StatFlow) | Primeros análisis y visualización de datos | ✅ Disponible |
-| **StatGeo** | Visualización y análisis espacial interactivo | 
-| StatModels | Modelos estadísticos avanzados | 🔜 Próximamente |
+| Módulo | Descripción |
+|--------|-------------|
+| Datos | Cargar datos vectoriales y raster |
+| Vectorial | Análisis y visualización de datos vectoriales (sf) |
+| Raster | Análisis y visualización de datos raster (terra) |
+| Integración | Integración de capas vectoriales y raster |
+| Estadísticas | Estadísticas espaciales |
+| Acerca de | Información del proyecto |
 
-## Estructura del proyecto
-
-```
-StatGeo/
-├── app.R
-├── DESCRIPTION
-├── R/
-│   └── helpers.R
-└── modules/
-    ├── mod_upload.R
-    ├── mod_vector.R
-    ├── mod_raster.R
-    └── mod_stats.R
-```
-
-## Instalación local
+## Instalación
 
 ```r
-install.packages(c(
-  "shiny", "bslib", "sf", "terra", "tidyterra",
-  "raster", "leaflet", "mapview", "DT",
-  "easystats", "tidyverse"
-))
-shiny::runApp()
+install.packages("remotes")
+remotes::install_github("ManuelSpinola/StatGeo")
+```
+
+## Uso
+
+```r
+library(StatGeo)
+StatGeo::run_app()
 ```
 
 ## Autor

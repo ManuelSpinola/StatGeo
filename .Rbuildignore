@@ -1,6 +1,8 @@
-^renv$
-^renv\.lock$
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^renv$
+^renv\.lock$
+^\.github$
+^README\.Rmd$
 ^\.positai$
 ^\.claude$
