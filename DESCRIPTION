@@ -21,9 +21,17 @@ Imports:
     shinyjs,
     sf,
     terra,
+    raster,
     leaflet,
+    mapview,
+    tidyterra,
     ggplot2,
     dplyr,
+    readr,
+    readxl,
+    DT,
+    RColorBrewer,
+    viridisLite,
     golem,
     pkgload
 Suggests:
