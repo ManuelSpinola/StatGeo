@@ -13,7 +13,7 @@ Description: A Shiny-based interactive platform for spatial analysis and GIS,
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.3
 Imports:
     shiny (>= 1.8.0),
     bslib (>= 0.7.0),
