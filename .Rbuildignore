@@ -6,3 +6,6 @@
 ^README\.Rmd$
 ^\.positai$
 ^\.claude$
+^app\.R$
+^rsconnect$
+^\.rscignore$
