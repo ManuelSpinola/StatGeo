@@ -5,6 +5,7 @@
 #' @import ggplot2
 #' @import dplyr
 #' @import sf
+#' @import leaflet
 #' @importFrom DT DTOutput renderDT datatable
 #' @importFrom readr read_delim read_csv
 #' @importFrom readxl read_excel
