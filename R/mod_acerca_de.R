@@ -11,7 +11,6 @@
 #   StatModels  — Modelos avanzados (próximamente)
 # ============================================================
 
-library(bsicons)
 
 mod_acerca_de_ui <- function(id) {
   ns <- NS(id)
@@ -106,44 +105,14 @@ mod_acerca_de_ui <- function(id) {
                 tags$td(tags$a("r-spatial.github.io/mapview", href = "https://r-spatial.github.io/mapview", target = "_blank"))
               ),
               tags$tr(
-                tags$td(tags$code("tidyverse")),
-                tags$td(paste0("v", packageVersion("tidyverse"))),
-                tags$td(tags$a("tidyverse.org", href = "https://www.tidyverse.org", target = "_blank"))
-              ),
-              tags$tr(
                 tags$td(tags$code("readxl")),
                 tags$td(paste0("v", packageVersion("readxl"))),
                 tags$td(tags$a("readxl.tidyverse.org", href = "https://readxl.tidyverse.org", target = "_blank"))
               ),
               tags$tr(
-                tags$td(tags$code("scales")),
-                tags$td(paste0("v", packageVersion("scales"))),
-                tags$td(tags$a("scales.r-lib.org", href = "https://scales.r-lib.org", target = "_blank"))
-              ),
-              tags$tr(
                 tags$td(tags$code("DT")),
                 tags$td(paste0("v", packageVersion("DT"))),
                 tags$td(tags$a("rstudio.github.io/DT", href = "https://rstudio.github.io/DT", target = "_blank"))
-              ),
-              tags$tr(
-                tags$td(tags$code("parameters")),
-                tags$td(paste0("v", packageVersion("parameters"))),
-                tags$td(tags$a("easystats.github.io/parameters", href = "https://easystats.github.io/parameters", target = "_blank"))
-              ),
-              tags$tr(
-                tags$td(tags$code("report")),
-                tags$td(paste0("v", packageVersion("report"))),
-                tags$td(tags$a("easystats.github.io/report", href = "https://easystats.github.io/report", target = "_blank"))
-              ),
-              tags$tr(
-                tags$td(tags$code("correlation")),
-                tags$td(paste0("v", packageVersion("correlation"))),
-                tags$td(tags$a("easystats.github.io/correlation", href = "https://easystats.github.io/correlation", target = "_blank"))
-              ),
-              tags$tr(
-                tags$td(tags$code("datawizard")),
-                tags$td(paste0("v", packageVersion("datawizard"))),
-                tags$td(tags$a("easystats.github.io/datawizard", href = "https://easystats.github.io/datawizard", target = "_blank"))
               ),
               tags$tr(
                 tags$td(tags$code("viridisLite")),
