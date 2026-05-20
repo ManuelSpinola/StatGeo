@@ -2,23 +2,6 @@
 # R/helpers.R — Funciones auxiliares globales
 # ============================================================
 
-library(shiny)
-library(bslib)
-library(bsicons)
-library(sf)
-library(terra)
-library(tidyterra)
-library(raster)
-library(leaflet)
-library(mapview)
-library(tidyverse)
-library(readxl)
-library(scales)
-library(DT)
-library(parameters)
-library(report)
-library(correlation)
-library(datawizard)
 
 # Operador null-coalescing
 `%||%` <- function(a, b) if (!is.null(a) && !is.na(a) && a != "") a else b
@@ -85,7 +68,7 @@ colores <- list(
 )
 
 # ── Tema visual ────────────────────────────────────────────
-tema_app <- bs_theme(
+tema_app <- bslib::bs_theme(
   version      = 5,
   bg           = colores$fondo,
   fg           = colores$texto,
@@ -94,11 +77,11 @@ tema_app <- bs_theme(
   success      = colores$exito,
   danger       = colores$peligro,
   warning      = colores$advertencia,
-  base_font    = font_google("Nunito"),
-  heading_font = font_google("Nunito", wght = 700),
+  base_font    = bslib::font_google("Nunito"),
+  heading_font = bslib::font_google("Nunito", wght = 700),
   bootswatch   = NULL
 ) |>
-  bs_add_rules("
+  bslib::bs_add_rules("
   .navbar { background-color: #1170AA !important; }
   .navbar-brand { color: #ffffff !important; display: flex !important;
                   align-items: center !important;
@@ -114,10 +97,10 @@ tema_app <- bs_theme(
 # ── Escala de color para gráficos (ggplot2) ───────────────
 # Uso: + scale_fill_tableau_cb() o + scale_color_tableau_cb()
 scale_fill_tableau_cb <- function(...) {
-  scale_fill_manual(values = colores$tableau, ...)
+  ggplot2::scale_fill_manual(values = colores$tableau, ...)
 }
 scale_color_tableau_cb <- function(...) {
-  scale_color_manual(values = colores$tableau, ...)
+  ggplot2::scale_color_manual(values = colores$tableau, ...)
 }
 
 # ── Código R reproducible: encabezado estándar ────────────
