@@ -1,7 +1,7 @@
 {
     "installOptions": {
         "installFromRepository": true,
-        "libraryPath": "/Library/Frameworks/R.framework/Versions/4.6/Resources/library",
+        "libraryPath": "/Users/manuel_nuevo/Library/Caches/org.R-project.R/R/renv/library/R_shiny_statgeo-793f39b9/macos/R-4.6/aarch64-apple-darwin23",
         "installDependencies": true
     }
 }

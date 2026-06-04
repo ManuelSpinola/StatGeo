@@ -55,15 +55,21 @@ mod_vector_ui <- function(id) {
 
       # ── Reproyeccion ──────────────────────────────────────
       h6(class = "text-muted fw-bold text-uppercase small",
-         "Proyeccion"),
+         "Reproyeccion"),
 
-      selectInput(ns("target_crs"), "Reproyectar a:",
-                  choices = c(
-                    "Sin cambio"           = "original",
-                    "WGS84 (EPSG:4326)"    = "4326",
-                    "Mercator (EPSG:3857)" = "3857",
-                    "CRTM05 (EPSG:5367)"   = "5367"
-                  )),
+      textInput(ns("target_crs"), "Código EPSG:",
+                placeholder = "Ej: 4326, 3857, 5367"),
+
+      actionButton(ns("btn_reproyectar"), "Reproyectar",
+                   class = "btn-sm btn-primary w-100 mt-1",
+                   icon  = icon("globe")),
+
+      helpText(icon("circle-info"),
+               "WGS84 = 4326 · Mercator = 3857 · CRTM05 = 5367.",
+               tags$a("Buscar EPSG", href = "https://epsg.io",
+                      target = "_blank")),
+
+      uiOutput(ns("crs_status")),
 
       hr(),
 
@@ -149,15 +155,58 @@ mod_vector_server <- function(id, shared) {
       toupper(gt)
     })
 
+    # ── CRS activo (se actualiza solo al presionar el botón) ────
+    crs_activo <- reactiveVal(NULL)
+
+    observeEvent(input$btn_reproyectar, {
+      req(shared$sf_data)
+      epsg <- trimws(input$target_crs)
+      if (is.null(epsg) || epsg == "") {
+        showNotification("Ingresá un código EPSG.", type = "warning", duration = 4)
+        return()
+      }
+      epsg_int <- suppressWarnings(as.integer(epsg))
+      if (is.na(epsg_int)) {
+        showNotification("El código EPSG debe ser un número.", type = "error", duration = 4)
+        return()
+      }
+      tryCatch({
+        sf::st_transform(shared$sf_data, epsg_int)  # prueba sin asignar
+        crs_activo(epsg_int)
+        showNotification(
+          paste0("✓ Reproyectado a EPSG:", epsg_int),
+          type = "message", duration = 4
+        )
+      }, error = function(e) {
+        showNotification(
+          paste("EPSG", epsg_int, "no válido:", e$message),
+          type = "error", duration = 6
+        )
+      })
+    })
+
     # ── Datos reproyectados ───────────────────────────────────
     sf_processed <- reactive({
       req(shared$sf_data)
       sf_obj <- shared$sf_data
-      if (!is.null(input$target_crs) && input$target_crs != "original") {
-        sf_obj <- sf::st_transform(sf_obj,
-                                   as.integer(input$target_crs))
+      epsg   <- crs_activo()
+      if (!is.null(epsg)) {
+        sf_obj <- sf::st_transform(sf_obj, epsg)
       }
       sf_obj
+    })
+
+    # ── Estado de reproyección ────────────────────────────────
+    output$crs_status <- renderUI({
+      epsg <- crs_activo()
+      crs_orig <- sf::st_crs(shared$sf_data)$Name %||% "desconocido"
+      if (is.null(epsg)) {
+        div(class = "small text-muted mt-1",
+            icon("circle-info"), paste(" CRS original:", crs_orig))
+      } else {
+        div(class = "small text-success mt-1",
+            icon("check"), paste0(" EPSG:", epsg, " activo"))
+      }
     })
 
     # ── Datos filtrados ───────────────────────────────────────
@@ -183,11 +232,11 @@ mod_vector_server <- function(id, shared) {
     })
 
     # ── Actualizar selectores ─────────────────────────────────
-    observeEvent(shared$sf_data, {
+    observeEvent(if (!is.null(shared$sf_data)) nrow(shared$sf_data), {
       req(shared$sf_data)
-      cols     <- names(shared$sf_data)
-      num_cols <- cols[sapply(sf::st_drop_geometry(shared$sf_data),
-                              is.numeric)]
+      df       <- sf::st_drop_geometry(shared$sf_data)
+      cols     <- names(df)
+      num_cols <- cols[vapply(df, is.numeric, logical(1))]
 
       updateSelectInput(session, "color_col",
                         choices  = c("(ninguno)" = "", cols),

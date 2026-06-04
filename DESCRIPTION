@@ -24,6 +24,7 @@ Imports:
     raster,
     leaflet,
     mapview,
+    stars,
     tidyterra,
     ggplot2,
     dplyr,
@@ -33,7 +34,10 @@ Imports:
     RColorBrewer,
     viridisLite,
     golem,
-    pkgload
+    pkgload,
+    paisaje,
+    leafgl,
+    h3jsr
 Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

@@ -447,7 +447,7 @@ mod_upload_server <- function(id, shared) {
     })
 
     # ── Convertir tabla a sf al elegir coordenadas ───────────
-    observeEvent(list(input$lon_col, input$lat_col), {
+    observeEvent(c(input$lon_col, input$lat_col), {
       req(is_tabular(), !is.null(rv$raw_df),
           !is.null(input$lon_col), !is.null(input$lat_col))
       tryCatch({

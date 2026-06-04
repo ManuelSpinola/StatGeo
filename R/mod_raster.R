@@ -44,6 +44,24 @@ mod_raster_ui <- function(id) {
 
       hr(),
 
+      h6(class = "text-muted fw-bold text-uppercase small", "Reproyeccion"),
+
+      textInput(ns("target_crs"), "Código EPSG:",
+                placeholder = "Ej: 4326, 3857, 5367"),
+
+      actionButton(ns("btn_reproyectar"), "Reproyectar",
+                   class = "btn-sm btn-primary w-100 mt-1",
+                   icon  = icon("globe")),
+
+      helpText(icon("circle-info"),
+               "WGS84 = 4326 · Mercator = 3857 · CRTM05 = 5367.",
+               tags$a("Buscar EPSG", href = "https://epsg.io",
+                      target = "_blank")),
+
+      uiOutput(ns("crs_status")),
+
+      hr(),
+
       h6(class = "text-muted fw-bold text-uppercase small", "Exportar"),
 
       downloadButton(ns("download_rst"), "Descargar GeoTIFF",
@@ -90,7 +108,7 @@ mod_raster_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
 
     # ── Actualizar selector de bandas ─────────────────────────
-    observeEvent(shared$raster_data, {
+    observeEvent(if (!is.null(shared$raster_data)) terra::nlyr(shared$raster_data), {
       req(shared$raster_data)
       r <- shared$raster_data
       bandas <- seq_len(terra::nlyr(r))
@@ -100,10 +118,61 @@ mod_raster_server <- function(id, shared) {
       updateSelectInput(session, "band", choices = bandas, selected = 1)
     })
 
+    # ── CRS activo para reproyección ─────────────────────────
+    crs_activo <- reactiveVal(NULL)
+
+    observeEvent(input$btn_reproyectar, {
+      req(shared$raster_data)
+      epsg <- trimws(input$target_crs)
+      if (is.null(epsg) || epsg == "") {
+        showNotification("Ingresá un código EPSG.", type = "warning", duration = 4)
+        return()
+      }
+      epsg_int <- suppressWarnings(as.integer(epsg))
+      if (is.na(epsg_int)) {
+        showNotification("El código EPSG debe ser un número.", type = "error", duration = 4)
+        return()
+      }
+      tryCatch({
+        terra::project(shared$raster_data, paste0("EPSG:", epsg_int))  # prueba
+        crs_activo(epsg_int)
+        showNotification(
+          paste0("✓ Reproyectado a EPSG:", epsg_int),
+          type = "message", duration = 4
+        )
+      }, error = function(e) {
+        showNotification(
+          paste("EPSG", epsg_int, "no válido:", e$message),
+          type = "error", duration = 6
+        )
+      })
+    })
+
+    # ── Estado de reproyección ────────────────────────────────
+    output$crs_status <- renderUI({
+      epsg <- crs_activo()
+      crs_orig <- tryCatch(
+        terra::crs(shared$raster_data, describe = TRUE)$name,
+        error = function(e) "desconocido"
+      )
+      if (is.null(epsg)) {
+        div(class = "small text-muted mt-1",
+            icon("circle-info"), paste(" CRS original:", crs_orig))
+      } else {
+        div(class = "small text-success mt-1",
+            icon("check"), paste0(" EPSG:", epsg, " activo"))
+      }
+    })
+
     # ── Banda seleccionada y operación aplicada ───────────────
     raster_band <- reactive({
       req(shared$raster_data, input$band)
       r <- shared$raster_data[[as.integer(input$band)]]
+      # Aplicar reproyección si está activa
+      epsg <- crs_activo()
+      if (!is.null(epsg)) {
+        r <- terra::project(r, paste0("EPSG:", epsg))
+      }
 
       switch(input$operation,
              "normalize"  = (r - terra::global(r, "min", na.rm = TRUE)$min) /

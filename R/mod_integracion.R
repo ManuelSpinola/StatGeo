@@ -16,7 +16,7 @@ mod_integracion_ui <- function(id) {
         width = 290,
         title = "Control de capas",
 
-        # ── Capa vectorial ──────────────────────────────────
+        # ── Capa vectorial ────────────────────────────────
         div(
           class = "mb-3 p-2 rounded",
           style = paste0("border-left: 4px solid ", colores$primario,
@@ -25,18 +25,13 @@ mod_integracion_ui <- function(id) {
           div(
             class = "d-flex align-items-center justify-content-between mb-2",
             h6(class = "fw-bold mb-0",
-               style = paste0("color:", colores$primario, ";"),
+               style  = paste0("color:", colores$primario, ";"),
                icon("draw-polygon"), " Vectorial"),
             div(class = "form-check form-switch mb-0",
                 tags$input(type = "checkbox", checked = NA,
                            class = "form-check-input",
-                           id = ns("vec_visible")))
+                           id    = ns("vec_visible")))
           ),
-
-          radioButtons(ns("vec_orden"), "Posici\u00f3n:",
-                       choices  = c("Encima del raster" = "encima",
-                                    "Debajo del raster" = "debajo"),
-                       selected = "encima"),
 
           radioButtons(ns("vec_estilo"), "Estilo:",
                        choices  = c("Relleno s\u00f3lido" = "solido",
@@ -49,7 +44,7 @@ mod_integracion_ui <- function(id) {
 
         hr(style = "margin:8px 0;"),
 
-        # ── Capa raster ─────────────────────────────────────
+        # ── Capa raster ───────────────────────────────────
         div(
           class = "mb-3 p-2 rounded",
           style = paste0("border-left: 4px solid ", colores$acento,
@@ -58,19 +53,19 @@ mod_integracion_ui <- function(id) {
           div(
             class = "d-flex align-items-center justify-content-between mb-2",
             h6(class = "fw-bold mb-0",
-               style = paste0("color:", colores$acento, ";"),
+               style  = paste0("color:", colores$acento, ";"),
                icon("layer-group"), " Raster"),
             div(class = "form-check form-switch mb-0",
                 tags$input(type = "checkbox", checked = NA,
                            class = "form-check-input",
-                           id = ns("rst_visible")))
+                           id    = ns("rst_visible")))
           ),
 
-          selectInput(ns("rst_paleta"), "Paleta de colores:",
-                      choices  = c("Viridis"  = "viridis", "Magma"   = "magma",
-                                   "Inferno"  = "inferno", "Plasma"  = "plasma",
-                                   "Cividis"  = "cividis", "Grises"  = "grays",
-                                   "Terrain"  = "terrain"),
+          selectInput(ns("rst_paleta"), "Paleta:",
+                      choices  = c("Viridis" = "viridis", "Magma"   = "magma",
+                                   "Inferno" = "inferno", "Plasma"  = "plasma",
+                                   "Cividis" = "cividis", "Grises"  = "grays",
+                                   "Terrain" = "terrain"),
                       selected = "viridis"),
 
           sliderInput(ns("rst_opacidad"), "Opacidad:",
@@ -83,7 +78,7 @@ mod_integracion_ui <- function(id) {
                     choices  = c("CartoDB Claro"  = "CartoDB.Positron",
                                  "CartoDB Oscuro" = "CartoDB.DarkMatter",
                                  "OpenStreetMap"  = "OpenStreetMap",
-                                 "Sat\u00e9lite" = "Esri.WorldImagery",
+                                 "Sat\u00e9lite"  = "Esri.WorldImagery",
                                  "Sin mapa base"  = "none"),
                     selected = "CartoDB.Positron"),
 
@@ -97,7 +92,7 @@ mod_integracion_ui <- function(id) {
                                       "; color:#fff;"))
       ),
 
-      # ── Mapa ─────────────────────────────────────────────
+      # ── Mapa ──────────────────────────────────────────────
       card(
         card_header(
           class = "d-flex justify-content-between align-items-center",
@@ -116,7 +111,7 @@ mod_integracion_server <- function(id, shared) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
-    # ── Alertas contextuales ─────────────────────────────────
+    # ── Alerta contextual ────────────────────────────────────
     output$datos_alert <- renderUI({
       tiene_vec <- !is.null(shared$sf_data)
       tiene_rst <- !is.null(shared$raster_data)
@@ -138,7 +133,7 @@ mod_integracion_server <- function(id, shared) {
       }
     })
 
-    # ── Badge capas activas ──────────────────────────────────
+    # ── Badge de capas activas ───────────────────────────────
     output$capas_badge <- renderUI({
       n <- sum(c(
         isTRUE(!is.null(shared$sf_data)     && isTRUE(input$vec_visible)),
@@ -186,19 +181,17 @@ mod_integracion_server <- function(id, shared) {
                         "cividis" = viridisLite::cividis,
                         "grays"   = function(n) gray.colors(n, start = 0.9, end = 0.1),
                         "terrain" = function(n) terrain.colors(n),
-                        viridisLite::viridis
-      )
-      colorNumeric(palette = pal_fun(256), domain = rng,
-                   na.color = "transparent")
+                        viridisLite::viridis)
+      colorNumeric(palette = pal_fun(256), domain = rng, na.color = "transparent")
     }
 
-    # ── Observador principal ─────────────────────────────────
+    # ── Observador principal del mapa ────────────────────────
     observe({
-      tiene_vec  <- !is.null(shared$sf_data)
-      tiene_rst  <- !is.null(shared$raster_data)
+      tiene_vec <- tryCatch(!is.null(shared$sf_data),     error = function(e) FALSE)
+      tiene_rst <- tryCatch(!is.null(shared$raster_data), error = function(e) FALSE)
+
       vec_vis    <- isTRUE(input$vec_visible)
       rst_vis    <- isTRUE(input$rst_visible)
-      vec_orden  <- input$vec_orden    %||% "encima"
       vec_estilo <- input$vec_estilo   %||% "solido"
       vec_op     <- input$vec_opacidad %||% 0.7
       rst_op     <- input$rst_opacidad %||% 0.8
@@ -212,9 +205,21 @@ mod_integracion_server <- function(id, shared) {
       if (basemap != "none")
         m <- m %>% addProviderTiles(basemap)
 
-      # Función: agregar vectorial
-      agregar_vec <- function(m) {
-        if (!tiene_vec || !vec_vis) return(m)
+      # ── Agregar raster ──────────────────────────────────────
+      if (tiene_rst && rst_vis) {
+        rst   <- rst_wgs84()
+        pal   <- get_rst_pal(rst, pal_nom)
+        rst_r <- raster::raster(rst[[1]])
+        m <- m %>%
+          addRasterImage(x = rst_r, colors = pal,
+                         opacity = rst_op, group = "Raster") %>%
+          addLegend(position = "bottomright", pal = pal,
+                    values   = raster::values(rst_r),
+                    title    = names(rst)[1], opacity = 0.85)
+      }
+
+      # ── Agregar vectorial ───────────────────────────────────
+      if (tiene_vec && vec_vis) {
         sf_obj  <- vec_wgs84()
         gt      <- toupper(as.character(
           sf::st_geometry_type(sf_obj, by_geometry = FALSE)))
@@ -222,7 +227,7 @@ mod_integracion_server <- function(id, shared) {
         col     <- colores$primario
         w       <- if (vec_estilo == "contorno") 2 else 1
 
-        if (grepl("POINT|MULTIPOINT", gt)) {
+        m <- if (grepl("POINT|MULTIPOINT", gt)) {
           m %>% addCircleMarkers(data = sf_obj, group = "Vectorial",
                                  radius = 5, color = col, fillColor = col,
                                  fillOpacity = fill_op, opacity = vec_op, weight = w)
@@ -236,101 +241,71 @@ mod_integracion_server <- function(id, shared) {
         }
       }
 
-      # Función: agregar raster
-      agregar_rst <- function(m) {
-        if (!tiene_rst || !rst_vis) return(m)
-        rst   <- rst_wgs84()
-        pal   <- get_rst_pal(rst, pal_nom)
-        rst_r <- raster::raster(rst[[1]])
-        m %>%
-          addRasterImage(x = rst_r, colors = pal,
-                         opacity = rst_op, group = "Raster") %>%
-          addLegend(position = "bottomright", pal = pal,
-                    values = raster::values(rst_r),
-                    title = names(rst)[1], opacity = 0.85)
-      }
-
-      # Orden de capas
-      if (vec_orden == "encima") {
-        m <- agregar_rst(m)
-        m <- agregar_vec(m)
-      } else {
-        m <- agregar_vec(m)
-        m <- agregar_rst(m)
-      }
-
-      # Control de capas Leaflet
+      # ── Control de capas ────────────────────────────────────
       grupos <- c()
-      if (tiene_vec) grupos <- c(grupos, "Vectorial")
-      if (tiene_rst) grupos <- c(grupos, "Raster")
+      if (tiene_rst && rst_vis) grupos <- c(grupos, "Raster")
+      if (tiene_vec && vec_vis) grupos <- c(grupos, "Vectorial")
+
       if (length(grupos) > 0)
         m <- m %>% addLayersControl(
           overlayGroups = grupos,
-          options = layersControlOptions(collapsed = FALSE))
+          options       = layersControlOptions(collapsed = FALSE))
 
       m %>% addScaleBar(position = "bottomleft")
     })
 
-    # ── Ajustar bounds ───────────────────────────────────────
-    observeEvent(list(shared$sf_data, shared$raster_data), {
+    # ── Ajustar bounds al cargar datos ───────────────────────
+    observeEvent(c(
+      if (!is.null(shared$sf_data)     && inherits(shared$sf_data, "sf"))
+        nrow(shared$sf_data) else NULL,
+      if (!is.null(shared$raster_data) && inherits(shared$raster_data, "SpatRaster"))
+        terra::ncell(shared$raster_data) else NULL
+    ), {
       if (!is.null(shared$sf_data)) {
         bb <- sf::st_bbox(sf::st_transform(shared$sf_data, 4326))
         leafletProxy(ns("mapa")) %>%
-          fitBounds(bb[["xmin"]], bb[["ymin"]],
-                    bb[["xmax"]], bb[["ymax"]])
+          fitBounds(bb[["xmin"]], bb[["ymin"]], bb[["xmax"]], bb[["ymax"]])
       } else if (!is.null(shared$raster_data)) {
         ext <- terra::ext(terra::project(shared$raster_data, "EPSG:4326"))
         leafletProxy(ns("mapa")) %>%
           fitBounds(ext$xmin, ext$ymin, ext$xmax, ext$ymax)
       }
-    })
+    }, ignoreNULL = FALSE)
 
-    # ── Descarga ─────────────────────────────────────────────
+    # ── Descarga PNG ─────────────────────────────────────────
     output$descargar_mapa <- downloadHandler(
       filename = function() paste0("integracion_", Sys.Date(), ".png"),
       content  = function(file) {
-        tiene_vec <- !is.null(shared$sf_data)
-        tiene_rst <- !is.null(shared$raster_data)
-        vec_vis   <- isTRUE(input$vec_visible)
-        rst_vis   <- isTRUE(input$rst_visible)
-
         mv <- NULL
 
-        # Raster primero (capa base)
-        if (tiene_rst && rst_vis) {
-          rst <- rst_wgs84()
+        if (!is.null(shared$raster_data) && isTRUE(input$rst_visible)) {
+          rst      <- rst_wgs84()
           pal_cols <- switch(input$rst_paleta %||% "viridis",
                              "viridis" = viridisLite::viridis(256),
                              "magma"   = viridisLite::magma(256),
                              "inferno" = viridisLite::inferno(256),
                              "plasma"  = viridisLite::plasma(256),
                              "cividis" = viridisLite::cividis(256),
-                             "grays"   = gray.colors(256, start = 0.9, end = 0.1),
+                             "grays"   = gray.colors(256, 0.9, 0.1),
                              "terrain" = terrain.colors(256),
-                             viridisLite::viridis(256)
-          )
-          mv <- mapview::mapview(
-            rst[[1]],
-            col.regions = pal_cols,
-            alpha       = input$rst_opacidad %||% 0.8,
-            layer.name  = names(rst)[1]
-          )
+                             viridisLite::viridis(256))
+          mv <- mapview::mapview(rst[[1]], col.regions = pal_cols,
+                                 alpha      = input$rst_opacidad %||% 0.8,
+                                 layer.name = names(rst)[1])
         }
 
-        # Vectorial encima
-        if (tiene_vec && vec_vis) {
-          mv_vec <- mapview::mapview(
-            vec_wgs84(),
-            col.regions   = colores$secundario,
-            color         = colores$primario,
-            alpha.regions = input$vec_opacidad %||% 0.7,
-            layer.name    = "Vectorial"
-          )
+        if (!is.null(shared$sf_data) && isTRUE(input$vec_visible)) {
+          mv_vec <- mapview::mapview(vec_wgs84(),
+                                    col.regions   = colores$secundario,
+                                    color         = colores$primario,
+                                    alpha.regions = input$vec_opacidad %||% 0.7,
+                                    layer.name    = "Vectorial")
           mv <- if (is.null(mv)) mv_vec else mv + mv_vec
         }
 
         if (is.null(mv)) {
-          notify_wrn("No hay capas visibles para exportar.")
+          showNotification("No hay capas visibles para exportar.",
+                           type = "warning", duration = 4)
           return()
         }
 
@@ -340,4 +315,3 @@ mod_integracion_server <- function(id, shared) {
 
   })
 }
-

@@ -144,7 +144,7 @@ mod_stats_server <- function(id, shared) {
     })
 
     # ── Actualizar bandas raster ───────────────────────────────
-    observeEvent(shared$raster_data, {
+    observeEvent(if (!is.null(shared$raster_data)) terra::nlyr(shared$raster_data), {
       req(shared$raster_data)
       n <- terra::nlyr(shared$raster_data)
       updateSelectInput(session, "raster_band_stat",

@@ -27,6 +27,7 @@ app_ui <- function() {
     nav_panel(title = "Vectorial",      icon = bs_icon("map"),           mod_vector_ui("vector")),
     nav_panel(title = "Raster",         icon = bs_icon("grid-3x3"),      mod_raster_ui("raster")),
     nav_panel(title = "Integraci\u00f3n", icon = bs_icon("layers"),      mod_integracion_ui("integracion")),
+    nav_panel(title = "Grilla H3",        icon = bs_icon("hexagon-fill"),       mod_h3_ui("h3")),
     nav_panel(title = "Estad\u00edsticas", icon = bs_icon("bar-chart"),  mod_stats_ui("stats")),
     nav_panel(title = "Acerca de",      icon = bs_icon("info-circle"),   mod_acerca_de_ui("acerca_de")),
 
