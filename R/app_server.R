@@ -14,11 +14,11 @@ app_server <- function(input, output, session) {
   # Módulo de carga — produce datos compartidos
   mod_upload_server("upload", shared = shared)
 
-  # Módulos de exploración — consumen shared
-  mod_vector_server("vector",           shared = shared)
-  mod_raster_server("raster",           shared = shared)
-  mod_integracion_server("integracion", shared = shared)
-  mod_h3_server("h3",                   shared = shared)
-  mod_stats_server("stats",             shared = shared)
+  # Módulo de mapa — consume shared
+  mod_mapa_server("mapa", shared = shared)
+
+  # Módulo de estadísticas — consume shared
+  mod_stats_server("stats", shared = shared)
+
   mod_acerca_de_server("acerca_de")
 }

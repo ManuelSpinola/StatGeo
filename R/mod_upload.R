@@ -15,11 +15,6 @@
 #   • ERDAS Imagine (.img)
 # ============================================================
 
-library(sf)
-library(terra)
-library(readr)
-library(readxl)
-library(dplyr)
 
 # ── UI ──────────────────────────────────────────────────────
 mod_upload_ui <- function(id) {
@@ -116,7 +111,10 @@ mod_upload_ui <- function(id) {
           uiOutput(ns("coord_ui")),
 
           hr(),
-          uiOutput(ns("vec_summary"))
+          uiOutput(ns("vec_summary")),
+
+          # ── Reproyección vectorial ───────────────────────────
+          uiOutput(ns("vec_reproject_ui"))
         )
       ),
 
@@ -185,7 +183,10 @@ mod_upload_ui <- function(id) {
           uiOutput(ns("rst_hint")),
 
           hr(),
-          uiOutput(ns("rst_summary"))
+          uiOutput(ns("rst_summary")),
+
+          # ── Reproyección raster ──────────────────────────────
+          uiOutput(ns("rst_reproject_ui"))
         )
       )
     ),
@@ -356,6 +357,8 @@ mod_upload_server <- function(id, shared) {
     # ── Cargar archivo vectorial ─────────────────────────────
     observeEvent(input$vec_file, {
       req(input$vec_file)
+      # Reset para forzar flush de observers
+      shared$sf_data <- NULL
       path <- input$vec_file$datapath
       ext  <- file_ext_clean()
 
@@ -468,6 +471,8 @@ mod_upload_server <- function(id, shared) {
     # ── Cargar archivo raster ────────────────────────────────
     observeEvent(input$rst_file, {
       req(input$rst_file)
+      # Reset para forzar flush de observers
+      shared$raster_data <- NULL
       tryCatch({
         rst              <- terra::rast(input$rst_file$datapath)
         shared$raster_data <- rst
@@ -475,6 +480,96 @@ mod_upload_server <- function(id, shared) {
       }, error = function(e) {
         notify_err(paste("Error al leer el raster:", e$message))
       })
+    })
+
+    # ── UI reproyección vectorial ────────────────────────────
+    output$vec_reproject_ui <- renderUI({
+      req(shared$sf_data)
+      div(
+        class = "mt-2",
+        div(class = "d-flex gap-1",
+            textInput(ns("vec_epsg"), NULL,
+                      placeholder = "EPSG reproyectar (ej: 4326)",
+                      width = "100%"),
+            actionButton(ns("btn_vec_reproyectar"), NULL,
+                         icon  = icon("rotate"),
+                         class = "btn-sm btn-outline-secondary")),
+        helpText(class = "small",
+                 icon("circle-info"),
+                 " WGS84=4326 · CRTM05=5367 · Mercator=3857 ·",
+                 tags$a("Buscar EPSG", href = "https://epsg.io",
+                        target = "_blank")),
+        uiOutput(ns("vec_crs_feedback"))
+      )
+    })
+
+    observeEvent(input$btn_vec_reproyectar, {
+      req(shared$sf_data)
+      epsg <- suppressWarnings(as.integer(trimws(input$vec_epsg)))
+      if (is.na(epsg)) {
+        showNotification("EPSG inv\u00e1lido — debe ser un n\u00famero.",
+                         type = "error", duration = 4)
+        return()
+      }
+      tryCatch({
+        shared$sf_data <- sf::st_transform(shared$sf_data, epsg)
+        showNotification(paste0("\u2713 Vectorial reproyectado a EPSG:", epsg),
+                         type = "message", duration = 4)
+      }, error = function(e)
+        showNotification(paste("Error:", e$message), type = "error", duration = 5))
+    })
+
+    output$vec_crs_feedback <- renderUI({
+      req(shared$sf_data)
+      crs <- sf::st_crs(shared$sf_data)$Name %||% "Sin CRS"
+      div(class = "small text-success mt-1",
+          icon("globe"), paste0(" CRS actual: ", crs))
+    })
+
+    # ── UI reproyección raster ────────────────────────────────
+    output$rst_reproject_ui <- renderUI({
+      req(shared$raster_data)
+      div(
+        class = "mt-2",
+        div(class = "d-flex gap-1",
+            textInput(ns("rst_epsg"), NULL,
+                      placeholder = "EPSG reproyectar (ej: 4326)",
+                      width = "100%"),
+            actionButton(ns("btn_rst_reproyectar"), NULL,
+                         icon  = icon("rotate"),
+                         class = "btn-sm btn-outline-secondary")),
+        helpText(class = "small",
+                 icon("circle-info"),
+                 " WGS84=4326 · CRTM05=5367 · Mercator=3857 ·",
+                 tags$a("Buscar EPSG", href = "https://epsg.io",
+                        target = "_blank")),
+        uiOutput(ns("rst_crs_feedback"))
+      )
+    })
+
+    observeEvent(input$btn_rst_reproyectar, {
+      req(shared$raster_data)
+      epsg <- suppressWarnings(as.integer(trimws(input$rst_epsg)))
+      if (is.na(epsg)) {
+        showNotification("EPSG inv\u00e1lido — debe ser un n\u00famero.",
+                         type = "error", duration = 4)
+        return()
+      }
+      tryCatch({
+        shared$raster_data <- terra::project(shared$raster_data,
+                                             paste0("EPSG:", epsg))
+        showNotification(paste0("\u2713 Raster reproyectado a EPSG:", epsg),
+                         type = "message", duration = 4)
+      }, error = function(e)
+        showNotification(paste("Error:", e$message), type = "error", duration = 5))
+    })
+
+    output$rst_crs_feedback <- renderUI({
+      req(shared$raster_data)
+      crs <- tryCatch(terra::crs(shared$raster_data, describe = TRUE)$name,
+                      error = function(e) "Sin CRS")
+      div(class = "small text-success mt-1",
+          icon("globe"), paste0(" CRS actual: ", crs))
     })
 
     # ── Resumen vectorial ────────────────────────────────────
