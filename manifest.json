@@ -6432,19 +6432,28 @@
       "checksum": "a1ac6ff5fd93c728e9f7552fd371ba8e"
     },
     ".Rprofile": {
-      "checksum": "2ec915d1f64ac4ae5e6d099fb0386e7f"
+      "checksum": "59de3edf12cd90096a9943d1ff23fc39"
     },
     "app.R": {
       "checksum": "5ae7f98d1b04a98490df50d6a66c78dd"
     },
-    "DESCRIPTION.bak": {
+    "DESCRIPTION": {
       "checksum": "fb133712e074c17d64ba0d46f352305c"
+    },
+    "dev/run_dev.R": {
+      "checksum": "af416ea1d16f8c4576bfde3af996ce20"
     },
     "inst/app/www/hexsticker_StatGeo.png": {
       "checksum": "b86454a5db99fc450715cca3c95191bf"
     },
     "inst/golem-config.yml": {
       "checksum": "d1c4c300661e5a2273062fd263f29b12"
+    },
+    "LICENSE": {
+      "checksum": "81d4cb29962f81f98e5691f6363640ea"
+    },
+    "man/run_app.Rd": {
+      "checksum": "f890e02954c95581171e4bdd9d6888b1"
     },
     "NAMESPACE": {
       "checksum": "f0bbbd733a2b0df37b6eb29c4164e79e"
@@ -6484,6 +6493,9 @@
     },
     "R/run_app.R": {
       "checksum": "89936b4b30f6f2ec43d6f38e9047ef31"
+    },
+    "README.md": {
+      "checksum": "9b755182a7a61243c2d4e36f02d0ccbd"
     },
     "renv.lock": {
       "checksum": "3a82617f6390e5d80505018a8101f8d5"
