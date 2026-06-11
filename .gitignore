@@ -4,3 +4,6 @@
 .Ruserdata
 .positai
 .DS_Store
+.Rhistory
+.Rproj.user/
+rsconnect/

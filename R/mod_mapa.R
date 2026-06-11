@@ -437,8 +437,8 @@ mod_mapa_server <- function(id, shared) {
 
       m <- leafletProxy(ns("mapa")) %>%
         clearImages() %>% clearShapes() %>%
-        clearControls() %>% clearMarkers() %>%
-        leafgl::clearGlLayers()
+        clearControls() %>% clearMarkers()
+      tryCatch({ m <- leafgl::clearGlLayers(m) }, error = function(e) NULL)
 
       if (basemap != "none")
         m <- m %>% addProviderTiles(basemap)
@@ -553,12 +553,29 @@ mod_mapa_server <- function(id, shared) {
       # Registrar dependencias
       shared$sf_data; shared$raster_data; h3_grid()
       input$vec_visible; input$rst_visible; input$h3_visible
-      input$vec_estilo; input$vec_opacidad; input$color_col; input$color_pal
+      input$vec_estilo; input$vec_opacidad; input$color_pal
       input$rst_paleta; input$rst_opacidad; input$rst_banda
       input$h3_opacidad; input$basemap
+
+      # color_col se lee con isolate para evitar redibujado
+      # con referencias a columnas del archivo anterior
+      # mientras el selectInput se está actualizando
+      isolate(input$color_col)
+
       # Redibujar
       redibujar_mapa()
     })
+
+    # Observer separado para color_col — solo redibuja cuando
+    # el usuario cambia la columna intencionalmente
+    observeEvent(input$color_col, {
+      req(shared$sf_data)
+      col <- input$color_col
+      # Solo redibujar si la columna seleccionada existe en el dataset actual
+      if (is.null(col) || col == "" || col %in% names(shared$sf_data)) {
+        redibujar_mapa()
+      }
+    }, ignoreInit = TRUE)
 
     # ════════════════════════════════════════════════════════
     # MAPA ESTÁTICO GGPLOT
