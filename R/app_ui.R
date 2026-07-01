@@ -18,8 +18,8 @@ app_ui <- function() {
     theme  = tema_app,
     lang   = "es",
     footer = div(
-      class = "text-center text-muted small py-2",
-      style = paste0("border-top: 1px solid ", colores$borde, ";"),
+      class = "text-center small py-2",
+      style = paste0("background:", colores$primario, "; color: white;"),
       "Manuel Sp\u00ednola \u00b7 ICOMVIS \u00b7 Universidad Nacional \u00b7 Costa Rica"
     ),
 
