@@ -345,7 +345,11 @@ mod_raster_server <- function(id, shared) {
     # ── Mapa leaflet interactivo ─────────────────────────────
     output$mapa_rst <- renderLeaflet({
       leaflet() %>%
-        addProviderTiles("CartoDB.Positron") %>%
+        addTiles(
+          urlTemplate = "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          options     = tileOptions(maxZoom = 19)
+        ) %>%
         setView(lng = -84, lat = 9.7, zoom = 7)
     })
 
@@ -380,7 +384,11 @@ mod_raster_server <- function(id, shared) {
         leafletProxy(ns("mapa_rst")) %>%
           clearImages() %>%
           clearControls() %>%
-          addProviderTiles(input$basemap_rst %||% "CartoDB.Positron") %>%
+          addTiles(
+            urlTemplate = "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            options     = tileOptions(maxZoom = 19)
+          ) %>%
           addRasterImage(
             x       = r_raster,
             colors  = pal,

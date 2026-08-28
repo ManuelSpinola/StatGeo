@@ -10,6 +10,27 @@
 # de cada capa individualmente.
 # ============================================================
 
+# ── CARTO ahora exige API key para sus tiles ─────────────────
+# Se reemplazó por el tile server estándar de OpenStreetMap
+# (tile.openstreetmap.org), que es gratuito y no requiere
+# autenticación. maxZoom 19 es el soportado por ese servidor.
+.osm_attrib <- '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+
+# Agrega el mapa base según el proveedor elegido.
+.agregar_basemap <- function(m, basemap) {
+  if (is.null(basemap) || basemap == "none") return(m)
+
+  if (basemap == "OpenStreetMap") {
+    m %>% addTiles(
+      urlTemplate = "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      attribution = .osm_attrib,
+      options     = tileOptions(maxZoom = 19)
+    )
+  } else {
+    m %>% addProviderTiles(basemap)
+  }
+}
+
 # ── UI ──────────────────────────────────────────────────────
 mod_mapa_ui <- function(id) {
   ns <- NS(id)
@@ -41,14 +62,12 @@ mod_mapa_ui <- function(id) {
       selectInput(
         ns("basemap"), NULL,
         choices = c(
-          "CartoDB Claro"  = "CartoDB.Positron",
-          "CartoDB Oscuro" = "CartoDB.DarkMatter",
           "OpenStreetMap"  = "OpenStreetMap",
           "Satélite"       = "Esri.WorldImagery",
           "Topo"           = "OpenTopoMap",
           "Sin mapa base"  = "none"
         ),
-        selected = "CartoDB.Positron",
+        selected = "OpenStreetMap",
         width = "100%"
       ),
 
@@ -227,7 +246,7 @@ mod_mapa_server <- function(id, shared) {
     # ── Mapa base ────────────────────────────────────────────
     output$mapa <- renderLeaflet({
       leaflet() %>%
-        addProviderTiles("CartoDB.Positron") %>%
+        .agregar_basemap("OpenStreetMap") %>%
         setView(lng = -84, lat = 9.7, zoom = 7)
     })
 
@@ -263,7 +282,7 @@ mod_mapa_server <- function(id, shared) {
     # ── Función principal de redibujo ────────────────────────
     redibujar_mapa <- function() {
       capas   <- shared$capas_vec
-      basemap <- input$basemap %||% "CartoDB.Positron"
+      basemap <- input$basemap %||% "OpenStreetMap"
 
       tiene_rst <- !is.null(shared$raster_activo) &&
                    !is.null(shared$rasters[[shared$raster_activo]])
@@ -279,8 +298,7 @@ mod_mapa_server <- function(id, shared) {
                error = function(e) NULL)
 
       # Mapa base
-      if (basemap != "none")
-        m <- m %>% addProviderTiles(basemap)
+      m <- .agregar_basemap(m, basemap)
 
       grupos <- c()
 

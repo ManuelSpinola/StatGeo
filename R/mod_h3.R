@@ -250,7 +250,11 @@ mod_h3_server <- function(id, shared) {
     # ── Mapa H3 ──────────────────────────────────────────────
     output$mapa_h3 <- renderLeaflet({
       leaflet() %>%
-        addProviderTiles("CartoDB.Positron") %>%
+        addTiles(
+          urlTemplate = "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          options     = tileOptions(maxZoom = 19)
+        ) %>%
         setView(lng = -84, lat = 9.7, zoom = 7)
     })
 
